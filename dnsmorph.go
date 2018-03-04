@@ -16,16 +16,10 @@ var (
 	y = color.New(color.FgYellow)
 	r = color.New(color.FgRed)
 	b = color.New(color.FgBlue)
-	banner = " _____  _   _  _____ __  __  ____  _____  _____  _    _\n" + 
-	         "|  __ \\| \\ | |/ ____|  \\/  |/ __ \\|  __ \\|  __ \\| |  | |\n" +
-	         "| |  | |  \\| | (___ | \\  / | |  | | |__) | |__) | |__| |\n" +
-	         "| |  | | . ` |\\___ \\| |\\/| | |  | |  _  /|  ___/|  __  |\n"+
-	         "| |__| | |\\  |____) | |  | | |__| | | \\ \\| |    | |  | |\n" +
-	         "|_____/|_| \\_|_____/|_|  |_|\\____/|_|  \\_\\_|    |_|  |_|"
 )
 
 func setup(){
-	y.Printf(banner)
+	y.Printf("DNSMORPH")
 	fmt.Printf(" v.%s\n\n", Version)
 
 	flag.Parse()
