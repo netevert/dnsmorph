@@ -20,7 +20,7 @@ var (
 	b = color.New(color.FgBlue)
 	help = `Usage of %s:
 	dnsmorph [domain]		# runs permutation on domain
-	`
+`
 )
 
 func setup(){
@@ -54,7 +54,7 @@ func homoglyph(domain string){
 		'l': []rune{'1', 'i', 'ɫ', 'ł'},
 		'm': []rune{'n', 'ṃ', 'ᴍ', 'м', 'ɱ'}, // 'nn', 'rn', 'rr'
 		'n': []rune{'m', 'r', 'ń'},
-		'o': []rune{'0', 'Ο', 'ο', 'О', 'о', 'Օ', 'ȯ', 'ọ', 'ỏ', 'ơ', 'ó', 'ö', 'ӧ', '𐒆', 'Ｏ', 'ｏ', 'Ｏ'},
+		'o': []rune{'0', 'Ο', 'ο', 'О', 'о', 'Օ', 'ȯ', 'ọ', 'ỏ', 'ơ', 'ó', 'ö', 'ӧ', 'ｏ'},
 		'p': []rune{'ρ', 'р', 'ƿ', 'Ϸ', 'Þ'},
 		'q': []rune{'g', 'զ', 'ԛ', 'գ', 'ʠ'},
 		'r': []rune{'ʀ', 'Г', 'ᴦ', 'ɼ', 'ɽ'},
@@ -69,13 +69,16 @@ func homoglyph(domain string){
 	}
 	tld := strings.Split(domain, ".")[1]
 	dom := strings.Split(domain, ".")[0]
-	// domParts := strings.Split(dom, "")
 	runes := []rune(dom)
-	for _, r := range runes {
-		g := glyphs[r]
-		for _, char := range g {
-			str := strings.Replace(dom, string(r), string(char), -1)
-			fmt.Println(str + "." + tld)
+	for i, char := range runes {
+		a := i
+		a += 1
+		charGlyph := glyphs[char]
+		for _, glyph := range charGlyph {
+			// str := strings.Replace(dom, string(r), string(char), -1)
+			// fmt.Println(str + "." + tld)
+			fmt.Println(string(runes[:i]) + string(glyph) + string(runes[a:]) + "." + tld)
+			// todo: add duplicate character substitutions
 		}
 	}
 }
