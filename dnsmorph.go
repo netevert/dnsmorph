@@ -11,7 +11,7 @@ import ("flag"
 	"strings")
 
 // program version
-const Version = "1.0.0-alpha"
+const version = "1.0.0-beta"
 
 var (
 	g = color.New(color.FgGreen)
@@ -20,25 +20,36 @@ var (
 	b = color.New(color.FgBlue)
 	help = `Usage of %s:
 	dnsmorph [domain]		# runs permutation on domain
-`
-)
 
+`)
+
+// sets up command-line arguments
 func setup(){
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, help, os.Args[0])
 	}
 	y.Printf("DNSMORPH")
-	fmt.Printf(" v.%s\n\n", Version)
+	fmt.Printf(" v.%s\n\n", version)
 
 	flag.Parse()
 
 	if flag.Arg(0) == "" {
-		r.Printf("please supply a domain\n")
+		r.Printf("please supply a domain\n\n")
 		os.Exit(0)
 	}
 }
 
-func homoglyph(domain string){
+// returns a count of characters in a word
+func countChar(word string) map[rune]int {
+	count := make(map[rune]int)
+	for _, r := range []rune(word){
+		count[r]++
+	}
+	return count
+}
+
+// performs a homograph permutation attack
+func homographAttack(domain string){
 	glyphs := map[rune][]rune{
 		'a': []rune{'à', 'á', 'â', 'ã', 'ä', 'å', 'ɑ', 'а', 'ạ', 'ǎ', 'ă', 'ȧ','α','ａ'},
 		'b': []rune{'d', 'ʙ', 'Ь', 'ɓ', 'Б', 'ß', 'β', 'ᛒ'}, // 'lb', 'ib', 'b̔'
@@ -67,18 +78,30 @@ func homoglyph(domain string){
 		'y': []rune{'ʏ', 'γ', 'у', 'Ү', 'ý'},
 		'z': []rune{'ʐ', 'ż', 'ź', 'ʐ', 'ᴢ'},
 	}
+	// set local variables
+	doneCount := make(map[rune]bool)
 	tld := strings.Split(domain, ".")[1]
 	dom := strings.Split(domain, ".")[0]
 	runes := []rune(dom)
+	count := countChar(dom)
+
 	for i, char := range runes {
-		a := i
-		a += 1
+		index := i
+		index++
 		charGlyph := glyphs[char]
+		// perform attack against single character
 		for _, glyph := range charGlyph {
-			// str := strings.Replace(dom, string(r), string(char), -1)
-			// fmt.Println(str + "." + tld)
-			fmt.Println(string(runes[:i]) + string(glyph) + string(runes[a:]) + "." + tld)
-			// todo: add duplicate character substitutions
+			fmt.Println(string(runes[:i]) + string(glyph) + string(runes[index:]) + "." + tld)
+		}
+		// determine if character is a duplicate
+		// and if the attack has already been performed
+		// against all characters at the same time
+		if (count[char] > 1 && doneCount[char]!= true) {
+			doneCount[char] = true
+			for _, glyph := range charGlyph {
+				str := strings.Replace(dom, string(char), string(glyph), -1)
+				fmt.Println(str + "." + tld)
+			}
 		}
 	}
 }
@@ -87,5 +110,5 @@ func homoglyph(domain string){
 func main(){
 	setup()
 	domain := flag.Arg(0)
-	homoglyph(domain)
+	homographAttack(domain)
 }
