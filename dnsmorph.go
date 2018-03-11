@@ -1,7 +1,3 @@
-/*
-this software is work in progress
-*/
-
 package main
 
 import ("flag"
@@ -11,7 +7,7 @@ import ("flag"
 	"strings")
 
 // program version
-const version = "1.0.0-beta"
+const version = "1.0.0-dev1"
 
 var (
 	g = color.New(color.FgGreen)
