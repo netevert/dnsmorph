@@ -7,7 +7,7 @@ import ("flag"
 	"strings")
 
 // program version
-const version = "1.0.0-dev1"
+const version = "1.0.0-dev2"
 
 var (
 	g = color.New(color.FgGreen)
@@ -42,6 +42,24 @@ func countChar(word string) map[rune]int {
 		count[r]++
 	}
 	return count
+}
+
+// performs a bitsquat permutation attack
+func bitsquattingAttack(domain string) {
+
+	tld := strings.Split(domain, ".")[1]
+	dom := strings.Split(domain, ".")[0]
+	masks := []int32{1, 2, 4, 8, 16, 32, 64, 128}
+
+	for i, c := range dom {
+		for m := range masks {
+			b := rune(int(c) ^ m)
+			o := int(b)
+			if (o >= 48 && o <= 57) || (o >= 97 && o <= 122) || o == 45 {
+				fmt.Println(dom[:i]+ string(b) + dom[i+1:] + "."+ tld)
+			}
+		}
+	}
 }
 
 // performs a homograph permutation attack
@@ -106,5 +124,8 @@ func homographAttack(domain string){
 func main(){
 	setup()
 	domain := flag.Arg(0)
+	fmt.Println("\n--- homograph attack results---\n")
 	homographAttack(domain)
+	fmt.Println("\n--- bitsquat attack results ---\n")
+	bitsquattingAttack(domain)
 }

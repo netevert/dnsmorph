@@ -26,6 +26,7 @@ Usage:
 
 The following domain permutation attacks are included:
 - Homograph attack (both on single and duplicate characters)
+- Bitsquat attack
 
 **Please note that DNSMORPH is work in progress**, consult the [issues page](https://github.com/netevert/dnsmorph/issues) to see what's in the [roadmap](https://github.com/netevert/dnsmorph/milestone/1) to v.1.0.0 and how the project is progressing.
 
@@ -43,7 +44,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 Donations
 =========
 
-If you like DNSMORPH please consider donating:
-
+<details><summary>If you like HODL please consider donating</summary>
+<p>
+    
     Bitcoin:  13i3hFGN1RaQqdeWqmPTMuYEj9FiJWuMWf
     Litecoin: LZqLoRNHvJyuKz99mNAgVUj6M8iyEQuio9
+</p>
+</details>
