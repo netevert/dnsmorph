@@ -46,7 +46,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 Donations
 =========
 
-<details><summary>If you like HODL please consider donating</summary>
+<details><summary>If you like DNSMORPH please consider donating</summary>
 <p>
     
     Bitcoin:  13i3hFGN1RaQqdeWqmPTMuYEj9FiJWuMWf
