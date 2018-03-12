@@ -5,6 +5,8 @@
 [![](https://img.shields.io/github/issues-raw/netevert/dnsmorph.svg)](https://github.com/netevert/dnsmorph/issues)
 [![](https://img.shields.io/github/issues-closed-raw/netevert/dnsmorph.svg)](https://github.com/netevert/dnsmorph/issues?q=is%3Aissue+is%3Aclosed)
 [![GitHub last commit](https://img.shields.io/github/last-commit/errantbot/dnsmorph.svg)](https://github.com/netevert/dnsmorph/commit/master)
+[![Donations](https://img.shields.io/badge/donate-bitcoin-orange.svg?logo=bitcoin)](https://github.com/netevert/dnsmorph#donations)
+
 
 DNSMORPH is a domain name permutation engine in the works. It is being written in [Go](https://golang.org/) to ensure that the end result is a robust, small and fast tool ideal for everyday use.
 
