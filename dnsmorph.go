@@ -14,25 +14,20 @@ var (
 	y = color.New(color.FgYellow)
 	r = color.New(color.FgRed)
 	b = color.New(color.FgBlue)
-	verbose = flag.Bool("-v", true, "enable verbosity")
-	help = `Usage of %s:
-	dnsmorph [domain]		# runs permutation on domain
-
-`)
+	domain = flag.String("d", "", "domain")
+	verbose = flag.Bool("v", false, "enable verbosity")
+	)
 
 // sets up command-line arguments
 func setup(){
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, help, os.Args[0])
-	}
 	y.Printf("DNSMORPH")
 	fmt.Printf(" v.%s\n\n", version)
 
 	flag.Parse()
 
-	if flag.Arg(0) == "" {
+	if *domain == "" {
 		r.Printf("please supply a domain\n\n")
-		os.Exit(0)
+		os.Exit(1)
 	}
 }
 
@@ -53,7 +48,11 @@ func hyphenationAttack(domain string){
 
 	for i := 1; i < len(dom); i++ {
 		if (rune(dom[i]) != '-' || rune(dom[i]) != '.') && (rune(dom[i-1]) != '-' || rune(dom[i-1]) != '.') {
-			fmt.Println(dom[:i] + "-" + dom[i:] + "." + tld)
+			if *verbose == false {
+				fmt.Println(dom[:i] + "-" + dom[i:] + "." + tld)
+			} else if *verbose == true {
+				fmt.Println("hyphenation:  " + dom[:i] + "-" + dom[i:] + "." + tld)
+			}
 		}
 	}
 }
@@ -70,7 +69,11 @@ func bitsquattingAttack(domain string) {
 			b := rune(int(c) ^ m)
 			o := int(b)
 			if (o >= 48 && o <= 57) || (o >= 97 && o <= 122) || o == 45 {
-				fmt.Println(dom[:i]+ string(b) + dom[i+1:] + "."+ tld)
+				if *verbose == false {
+					fmt.Println(dom[:i]+ string(b) + dom[i+1:] + "."+ tld)
+				} else if *verbose == true {
+					fmt.Println("bitsquatting: " + dom[:i]+ string(b) + dom[i+1:] + "."+ tld)
+				}
 			}
 		}
 	}
@@ -119,7 +122,11 @@ func homographAttack(domain string){
 		charGlyph := glyphs[char]
 		// perform attack against single character
 		for _, glyph := range charGlyph {
-			fmt.Println(string(runes[:i]) + string(glyph) + string(runes[index:]) + "." + tld)
+			if *verbose == false {
+				fmt.Println(string(runes[:i]) + string(glyph) + string(runes[index:]) + "." + tld)
+			} else if *verbose == true {
+				fmt.Println("homograph:    " + string(runes[:i]) + string(glyph) + string(runes[index:]) + "." + tld)
+			}
 		}
 		// determine if character is a duplicate
 		// and if the attack has already been performed
@@ -128,7 +135,11 @@ func homographAttack(domain string){
 			doneCount[char] = true
 			for _, glyph := range charGlyph {
 				str := strings.Replace(dom, string(char), string(glyph), -1)
-				fmt.Println(str + "." + tld)
+				if *verbose == false {
+					fmt.Println(str + "." + tld)
+				} else if *verbose == true {
+					fmt.Println("homograph:    " + str + "." + tld)
+				}
 			}
 		}
 	}
@@ -137,8 +148,7 @@ func homographAttack(domain string){
 // main program entry point
 func main(){
 	setup()
-	domain := flag.Arg(0)
-	homographAttack(domain)
-	bitsquattingAttack(domain)
-	hyphenationAttack(domain)
+	homographAttack(*domain)
+	hyphenationAttack(*domain)
+	bitsquattingAttack(*domain)
 }
