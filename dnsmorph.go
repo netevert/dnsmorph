@@ -7,13 +7,14 @@ import ("flag"
 	"strings")
 
 // program version
-const version = "1.0.0-dev2"
+const version = "1.0.0-dev3"
 
 var (
 	g = color.New(color.FgGreen)
 	y = color.New(color.FgYellow)
 	r = color.New(color.FgRed)
 	b = color.New(color.FgBlue)
+	verbose = flag.Bool("-v", true, "enable verbosity")
 	help = `Usage of %s:
 	dnsmorph [domain]		# runs permutation on domain
 
@@ -42,6 +43,19 @@ func countChar(word string) map[rune]int {
 		count[r]++
 	}
 	return count
+}
+
+// performs a hyphenation attack
+func hyphenationAttack(domain string){
+	
+	tld := strings.Split(domain, ".")[1]
+	dom := strings.Split(domain, ".")[0]
+
+	for i := 1; i < len(dom); i++ {
+		if (rune(dom[i]) != '-' || rune(dom[i]) != '.') && (rune(dom[i-1]) != '-' || rune(dom[i-1]) != '.') {
+			fmt.Println(dom[:i] + "-" + dom[i:] + "." + tld)
+		}
+	}
 }
 
 // performs a bitsquat permutation attack
@@ -124,8 +138,7 @@ func homographAttack(domain string){
 func main(){
 	setup()
 	domain := flag.Arg(0)
-	fmt.Println("\n--- homograph attack results---\n")
 	homographAttack(domain)
-	fmt.Println("\n--- bitsquat attack results ---\n")
 	bitsquattingAttack(domain)
+	hyphenationAttack(domain)
 }
