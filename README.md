@@ -30,6 +30,8 @@ The following domain permutation attacks are included:
 - Homograph attack (both on single and duplicate characters)
 - Bitsquat attack
 - Hyphenation attack
+- Omission attack
+- Repetition attack
 
 **Please note that DNSMORPH is work in progress**, consult the [issues page](https://github.com/netevert/dnsmorph/issues) to see what's in the [roadmap](https://github.com/netevert/dnsmorph/milestone/1) to v.1.0.0 and how the project is progressing.
 

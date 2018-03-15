@@ -4,29 +4,38 @@ import ("flag"
 	"fmt"
 	"github.com/fatih/color"
 	"os"
-	"strings")
+	"strings"
+	"text/tabwriter"
+	"unicode")
 
 // program version
-const version = "1.0.0-dev3"
+const version = "1.0.0-dev4"
 
 var (
 	g = color.New(color.FgGreen)
 	y = color.New(color.FgYellow)
 	r = color.New(color.FgRed)
 	b = color.New(color.FgBlue)
-	domain = flag.String("d", "", "domain")
+	blue = color.New(color.FgBlue).SprintFunc()  // this isn't working on windows
+	domain = flag.String("d", "", "target domain")
 	verbose = flag.Bool("v", false, "enable verbosity")
+	credits = flag.Bool("c", false, "view credits")
 	)
 
 // sets up command-line arguments
 func setup(){
-	y.Printf("DNSMORPH")
-	fmt.Printf(" v.%s\n\n", version)
 
 	flag.Parse()
 
-	if *domain == "" {
-		r.Printf("please supply a domain\n\n")
+	if *credits == true && *domain == "" {
+		y.Printf("DNSMORPH")
+		fmt.Printf(" v.%s\n\n", version)
+		g.Printf("Released under the terms of the MIT license\n")
+		g.Printf("Written and maintained with ❤ by NetEvert\n\n")
+		os.Exit(1)
+	} else if *domain == "" {
+		r.Printf("\nplease supply a domain\n\n")
+		flag.Usage()
 		os.Exit(1)
 	}
 }
@@ -40,47 +49,82 @@ func countChar(word string) map[rune]int {
 	return count
 }
 
-// performs a hyphenation attack
-func hyphenationAttack(domain string){
-	
-	tld := strings.Split(domain, ".")[1]
-	dom := strings.Split(domain, ".")[0]
-
-	for i := 1; i < len(dom); i++ {
-		if (rune(dom[i]) != '-' || rune(dom[i]) != '.') && (rune(dom[i-1]) != '-' || rune(dom[i-1]) != '.') {
-			if *verbose == false {
-				fmt.Println(dom[:i] + "-" + dom[i:] + "." + tld)
-			} else if *verbose == true {
-				fmt.Println("hyphenation:  " + dom[:i] + "-" + dom[i:] + "." + tld)
-			}
+// helper function to print permutation report and miscellaneous information
+func printReport(technique string, results []string, tld string, verbose bool){
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 0, 8, 2, '\t', tabwriter.TabIndent|tabwriter.AlignRight)
+	if verbose == false {
+		for _, result := range results {
+			fmt.Println(result + "." + tld)
 		}
+	} else if verbose == true {
+		for _, result := range results {
+			fmt.Fprintln(w, technique + "\t" + result + "." + tld + "\t")
+		}
+		w.Flush()
 	}
 }
 
-// performs a bitsquat permutation attack
-func bitsquattingAttack(domain string) {
+// performs a repetition attack
+func repetitionAttack(domain string) []string {
+	results := []string{}
+	count := make(map[string]int)
+	for i, c := range domain {
+		if unicode.IsLetter(c) {
+			result := fmt.Sprintf("%s%c%c%s", domain[:i], domain[i], domain[i], domain[i+1:])
+			count[result]++
+			// remove duplicates
+			if count[result] < 2 {
+				results = append(results, result)
+			}
+		}
+	}
+	return results
+}
 
-	tld := strings.Split(domain, ".")[1]
-	dom := strings.Split(domain, ".")[0]
+// performs an omission attack
+func omissionAttack(domain string) []string {
+	results := []string{}
+	for i := range domain {
+		results = append(results, fmt.Sprintf("%s%s", domain[:i], domain[i+1:]))
+	}
+	return results
+}
+
+// performs a hyphenation attack
+func hyphenationAttack(domain string) []string {
+	
+	results := []string{}
+
+	for i := 1; i < len(domain); i++ {
+		if (rune(domain[i]) != '-' || rune(domain[i]) != '.') && (rune(domain[i-1]) != '-' || rune(domain[i-1]) != '.') {
+			results = append(results, fmt.Sprintf("%s-%s", domain[:i], domain[i:]))
+		}
+	}
+	return results
+}
+
+// performs a bitsquat permutation attack
+func bitsquattingAttack(domain string) []string {
+
+	results := []string{}
 	masks := []int32{1, 2, 4, 8, 16, 32, 64, 128}
 
-	for i, c := range dom {
+	for i, c := range domain {
 		for m := range masks {
 			b := rune(int(c) ^ m)
 			o := int(b)
 			if (o >= 48 && o <= 57) || (o >= 97 && o <= 122) || o == 45 {
-				if *verbose == false {
-					fmt.Println(dom[:i]+ string(b) + dom[i+1:] + "."+ tld)
-				} else if *verbose == true {
-					fmt.Println("bitsquatting: " + dom[:i]+ string(b) + dom[i+1:] + "."+ tld)
-				}
+				results = append(results, fmt.Sprintf("%s%c%s", domain[:i], b, domain[i+1:]))
 			}
 		}
 	}
+	return results
 }
 
 // performs a homograph permutation attack
-func homographAttack(domain string){
+func homographAttack(domain string) []string {
+	// set local variables
 	glyphs := map[rune][]rune{
 		'a': []rune{'à', 'á', 'â', 'ã', 'ä', 'å', 'ɑ', 'а', 'ạ', 'ǎ', 'ă', 'ȧ','α','ａ'},
 		'b': []rune{'d', 'ʙ', 'Ь', 'ɓ', 'Б', 'ß', 'β', 'ᛒ'}, // 'lb', 'ib', 'b̔'
@@ -109,46 +153,40 @@ func homographAttack(domain string){
 		'y': []rune{'ʏ', 'γ', 'у', 'Ү', 'ý'},
 		'z': []rune{'ʐ', 'ż', 'ź', 'ʐ', 'ᴢ'},
 	}
-	// set local variables
 	doneCount := make(map[rune]bool)
-	tld := strings.Split(domain, ".")[1]
-	dom := strings.Split(domain, ".")[0]
-	runes := []rune(dom)
-	count := countChar(dom)
+	results := []string{}
+	runes := []rune(domain)
+	count := countChar(domain)
 
 	for i, char := range runes {
-		index := i
-		index++
-		charGlyph := glyphs[char]
 		// perform attack against single character
-		for _, glyph := range charGlyph {
-			if *verbose == false {
-				fmt.Println(string(runes[:i]) + string(glyph) + string(runes[index:]) + "." + tld)
-			} else if *verbose == true {
-				fmt.Println("homograph:    " + string(runes[:i]) + string(glyph) + string(runes[index:]) + "." + tld)
-			}
+		for _, glyph := range glyphs[char] {
+			results = append(results, fmt.Sprintf("%s%c%s", string(runes[:i]), glyph, string(runes[i+1:])))
 		}
 		// determine if character is a duplicate
 		// and if the attack has already been performed
 		// against all characters at the same time
 		if (count[char] > 1 && doneCount[char]!= true) {
 			doneCount[char] = true
-			for _, glyph := range charGlyph {
-				str := strings.Replace(dom, string(char), string(glyph), -1)
-				if *verbose == false {
-					fmt.Println(str + "." + tld)
-				} else if *verbose == true {
-					fmt.Println("homograph:    " + str + "." + tld)
-				}
+			for _, glyph := range glyphs[char] {
+				result := strings.Replace(domain, string(char), string(glyph), -1)
+				results = append(results, result)
 			}
 		}
 	}
+	return results
 }
 
 // main program entry point
 func main(){
 	setup()
-	homographAttack(*domain)
-	hyphenationAttack(*domain)
-	bitsquattingAttack(*domain)
+	target := *domain
+	tld := strings.Split(target, ".")[1]
+	dom := strings.Split(target, ".")[0]
+
+	printReport("omission", omissionAttack(dom), tld, *verbose)
+	printReport("homograph", homographAttack(dom), tld, *verbose)
+	printReport("repetition", repetitionAttack(dom), tld, *verbose)
+	printReport("hyphenation", hyphenationAttack(dom), tld, *verbose)
+	printReport("bitsquatting", bitsquattingAttack(dom), tld, *verbose)
 }
