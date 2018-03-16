@@ -9,7 +9,7 @@ import ("flag"
 	"unicode")
 
 // program version
-const version = "1.0.0-dev4"
+const version = "1.0.0-dev5"
 
 var (
 	g = color.New(color.FgGreen)
@@ -65,15 +65,107 @@ func printReport(technique string, results []string, tld string, verbose bool){
 	}
 }
 
-// performs a repetition attack
+// performs an addition attack adding a single character to the domain
+func additionAttack(domain string) []string {
+	results := []string{}
+
+	for i := 97; i < 123; i++ {
+		results = append(results, fmt.Sprintf("%s%c", domain, i))
+	}
+	return results
+}
+
+// performs a vowel swap attack
+func vowelswapAttack(domain string) []string {
+	results := []string{}
+	vowels := []rune{'a', 'e', 'i', 'o', 'u', 'y'}
+	runes := []rune(domain)
+
+	for i := 0; i < len(runes); i++ {
+		for _, v := range vowels {
+			switch runes[i] {
+			case 'a', 'e', 'i', 'o', 'u', 'y':
+				if runes[i] != v {
+					results = append(results, fmt.Sprintf("%s%c%s", string(runes[:i]), v, string(runes[i+1:])))
+				}
+			default:
+			}
+		}
+	}
+	return results
+}
+
+// performs a transposition attack swapping adjacent characters in the domain
+func transpositionAttack(domain string) []string {
+	results := []string{}
+	for i := 0; i < len(domain)-1; i++ {
+		if domain[i+1] != domain[i] {
+			results = append(results, fmt.Sprintf("%s%c%c%s", domain[:i], domain[i+1], domain[i], domain[i+2:]))
+		}
+	}
+	return results
+}
+
+// performs a subdomain attack by inserting dots between characters, effectively turning the 
+// domain in a subdomain
+func subdomainAttack(domain string) []string {
+	results := []string{}
+	runes := []rune(domain)
+
+	for i := 1; i < len(runes); i++ {
+		if (rune(runes[i]) != '-' || rune(runes[i]) != '.') && (rune(runes[i-1]) != '-' || rune(runes[i-1]) != '.') {
+			results = append(results, fmt.Sprintf("%s.%s", string(runes[:i]), string(runes[i:])))
+		}
+	}
+	return results
+}
+
+// performs a replacement attack simulating a user pressing the wrong keys
+func replacementAttack(domain string) []string {
+	results := []string{}
+	keyboards := make([]map[rune]string, 0)
+	count := make(map[string]int)
+	keyboardEn := map[rune]string{'q': "12wa", '2': "3wq1", '3': "4ew2", '4': "5re3", '5': "6tr4", '6': "7yt5", '7': "8uy6", '8': "9iu7", '9': "0oi8", '0': "po9",
+		'w': "3esaq2", 'e': "4rdsw3", 'r': "5tfde4", 't': "6ygfr5", 'y': "7uhgt6", 'u': "8ijhy7", 'i': "9okju8", 'o': "0plki9", 'p': "lo0",
+		'a': "qwsz", 's': "edxzaw", 'd': "rfcxse", 'f': "tgvcdr", 'g': "yhbvft", 'h': "ujnbgy", 'j': "ikmnhu", 'k': "olmji", 'l': "kop",
+		'z': "asx", 'x': "zsdc", 'c': "xdfv", 'v': "cfgb", 'b': "vghn", 'n': "bhjm", 'm': "njk"	}
+	keyboardDe := map[rune]string{'q': "12wa", 'w': "23esaq", 'e': "34rdsw", 'r': "45tfde", 't': "56zgfr", 'z': "67uhgt", 'u': "78ijhz", 'i': "89okju",
+		'o': "90plki", 'p': "0ßüölo", 'ü': "ß+äöp", 'a': "qwsy", 's': "wedxya", 'd': "erfcxs", 'f': "rtgvcd", 'g': "tzhbvf", 'h': "zujnbg", 'j': "uikmnh",
+		'k': "iolmj", 'l': "opök", 'ö': "püäl-", 'ä': "ü-ö", 'y': "asx", 'x': "sdcy", 'c': "dfvx", 'v': "fgbc", 'b': "ghnv", 'n': "hjmb", 'm': "jkn", 
+		'1': "2q", '2': "13wq", '3': "24ew", '4': "35re", '5': "46tr", '6': "57zt", '7': "68uz", '8': "79iu", '9': "80oi", '0': "9ßpo", 'ß': "0üp"}
+	keyboardEs := map[rune]string{'q': "12wa", 'w': "23esaq", 'e': "34rdsw", 'r': "45tfde", 't': "56ygfr", 'y': "67uhgt", 'u': "78ijhy", 'i': "89okju",
+		'o': "90plki", 'p': "0loñ", 'a': "qwsz", 's': "wedxza", 'd': "erfcxs", 'f': "rtgvcd", 'g': "tyhbvf", 'h': "yujnbg", 'j': "uikmnh", 'k': "iolmj",
+		'l': "opkñ", 'ñ': "pl",  'z': "asx", 'x': "sdcz", 'c': "dfvx", 'v': "fgbc", 'b': "ghnv", 'n': "hjmb", 'm': "jkn", '1': "2q", '2': "13wq", 
+		'3': "24ew", '4': "35re", '5': "46tr", '6': "57yt", '7': "68uy", '8': "79iu", '9': "80oi", '0': "9po"}
+	keyboardFr := map[rune]string{'a': "12zqé", 'z': "23eésaq", 'e': "34rdsz", 'r': "45tfde", 't': "56ygfr-", 'y': "67uhgtè-", 'u': "78ijhyè",
+		'i': "89okjuç", 'o': "90plkiçà", 'p': "0àlo", 'q': "azsw", 's': "zedxwq", 'd': "erfcxs", 'f': "rtgvcd", 'g': "tzhbvf", 'h': "zujnbg", 
+		'j': "uikmnh", 'k': "iolmj", 'l': "opmk", 'm': "pùl", 'w': "qsx", 'x': "sdcw", 'c': "dfvx", 'v': "fgbc", 'b': "ghnv",'n': "hjb", 
+		'1': "2aé", '2': "13azé", '3': "24ewé", '4': "35re", '5': "46tr", '6': "57ytè", '7': "68uyè", '8': "79iuèç", '9': "80oiçà", '0': "9àçpo"}
+	keyboards = append(keyboards, keyboardEn, keyboardDe, keyboardEs, keyboardFr)
+	for i, c := range domain {
+		for _, keyboard := range keyboards{
+			for _, char := range []rune(keyboard[c]) {
+				result := fmt.Sprintf("%s%c%s", domain[:i], char, domain[i+1:])
+				// remove duplicates
+				count[result]++
+				if count[result] < 2 {
+					results = append(results, result)
+				}
+			}
+		}
+	}
+	return results
+}
+
+// performs a repetition attack simulating a user pressing a key twice
 func repetitionAttack(domain string) []string {
 	results := []string{}
 	count := make(map[string]int)
 	for i, c := range domain {
 		if unicode.IsLetter(c) {
 			result := fmt.Sprintf("%s%c%c%s", domain[:i], domain[i], domain[i], domain[i+1:])
-			count[result]++
 			// remove duplicates
+			count[result]++
 			if count[result] < 2 {
 				results = append(results, result)
 			}
@@ -82,7 +174,7 @@ func repetitionAttack(domain string) []string {
 	return results
 }
 
-// performs an omission attack
+// performs an omission attack removing characters across the domain name
 func omissionAttack(domain string) []string {
 	results := []string{}
 	for i := range domain {
@@ -91,7 +183,7 @@ func omissionAttack(domain string) []string {
 	return results
 }
 
-// performs a hyphenation attack
+// performs a hyphenation attack adding hyphens between characters
 func hyphenationAttack(domain string) []string {
 	
 	results := []string{}
@@ -184,9 +276,14 @@ func main(){
 	tld := strings.Split(target, ".")[1]
 	dom := strings.Split(target, ".")[0]
 
+	printReport("addition", additionAttack(dom), tld, *verbose)
 	printReport("omission", omissionAttack(dom), tld, *verbose)
 	printReport("homograph", homographAttack(dom), tld, *verbose)
+	printReport("subdomain", subdomainAttack(dom), tld, *verbose)
+	printReport("vowel swap", vowelswapAttack(dom), tld, *verbose)
 	printReport("repetition", repetitionAttack(dom), tld, *verbose)
 	printReport("hyphenation", hyphenationAttack(dom), tld, *verbose)
+	printReport("replacement", replacementAttack(dom), tld, *verbose)
 	printReport("bitsquatting", bitsquattingAttack(dom), tld, *verbose)
+	printReport("transposition", transpositionAttack(dom), tld, *verbose)
 }
