@@ -1,6 +1,8 @@
 # DNSMORPH
 
 [![baby-gopher](https://raw.githubusercontent.com/drnic/babygopher-site/gh-pages/images/babygopher-logo-small.png)](http://www.babygopher.org)
+[![GitHub release](https://img.shields.io/github/release/dnsmorph/releases.svg)](https://github.com/netevert/dnsmorph/releases)
+[![license](https://img.shields.io/github/license/netevert/dnsmorph.svg)](https://github.com/netevert/dnsmorph/blob/master/LICENSE)
 [![Maintenance](https://img.shields.io/maintenance/yes/2018.svg)]()
 [![](https://img.shields.io/github/issues-raw/netevert/dnsmorph.svg)](https://github.com/netevert/dnsmorph/issues)
 [![](https://img.shields.io/github/issues-closed-raw/netevert/dnsmorph.svg)](https://github.com/netevert/dnsmorph/issues?q=is%3Aissue+is%3Aclosed)
