@@ -3,13 +3,14 @@ package main
 import ("flag"
 	"fmt"
 	"github.com/fatih/color"
+	"golang.org/x/net/publicsuffix"
 	"os"
 	"strings"
 	"text/tabwriter"
 	"unicode")
 
 // program version
-const version = "1.0.0-dev5"
+const version = "1.0.0-dev6"
 
 var (
 	g = color.New(color.FgGreen)
@@ -20,6 +21,7 @@ var (
 	domain = flag.String("d", "", "target domain")
 	verbose = flag.Bool("v", false, "enable verbosity")
 	credits = flag.Bool("c", false, "view credits")
+	subdomain = flag.Bool("s", false, "include subdomain")
 	)
 
 // sets up command-line arguments
@@ -63,6 +65,19 @@ func printReport(technique string, results []string, tld string, verbose bool){
 		}
 		w.Flush()
 	}
+}
+
+func runPermutations(target, tld string){
+	printReport("addition", additionAttack(target), tld, *verbose)
+	printReport("omission", omissionAttack(target), tld, *verbose)
+	printReport("homograph", homographAttack(target), tld, *verbose)
+	printReport("subdomain", subdomainAttack(target), tld, *verbose)
+	printReport("vowel swap", vowelswapAttack(target), tld, *verbose)
+	printReport("repetition", repetitionAttack(target), tld, *verbose)
+	printReport("hyphenation", hyphenationAttack(target), tld, *verbose)
+	printReport("replacement", replacementAttack(target), tld, *verbose)
+	printReport("bitsquatting", bitsquattingAttack(target), tld, *verbose)
+	printReport("transposition", transpositionAttack(target), tld, *verbose)
 }
 
 // performs an addition attack adding a single character to the domain
@@ -272,18 +287,14 @@ func homographAttack(domain string) []string {
 // main program entry point
 func main(){
 	setup()
-	target := *domain
-	tld := strings.Split(target, ".")[1]
-	dom := strings.Split(target, ".")[0]
-
-	printReport("addition", additionAttack(dom), tld, *verbose)
-	printReport("omission", omissionAttack(dom), tld, *verbose)
-	printReport("homograph", homographAttack(dom), tld, *verbose)
-	printReport("subdomain", subdomainAttack(dom), tld, *verbose)
-	printReport("vowel swap", vowelswapAttack(dom), tld, *verbose)
-	printReport("repetition", repetitionAttack(dom), tld, *verbose)
-	printReport("hyphenation", hyphenationAttack(dom), tld, *verbose)
-	printReport("replacement", replacementAttack(dom), tld, *verbose)
-	printReport("bitsquatting", bitsquattingAttack(dom), tld, *verbose)
-	printReport("transposition", transpositionAttack(dom), tld, *verbose)
+	if *subdomain == false {
+		tldPlusOne, _ := publicsuffix.EffectiveTLDPlusOne(*domain)
+		tld, _ := publicsuffix.PublicSuffix(tldPlusOne)
+		sanitizedDomain := strings.Replace(tldPlusOne, "." + tld, "", -1)
+		runPermutations(sanitizedDomain, tld)
+	} else if *subdomain == true {
+		tld, _ := publicsuffix.PublicSuffix(*domain)
+		sanitizedDomain := strings.Replace(*domain, "." + tld, "", -1)
+		runPermutations(sanitizedDomain, tld)
+	}
 }
