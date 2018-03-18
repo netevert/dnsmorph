@@ -67,8 +67,9 @@ Usage
     ./dnsmorph -s -d staging.amazon.com -v
 </p>
 </details>
+<p></p>
 
-**DNSMORPH is under active development**, much needs to be done to reach and surpass the quality of comparable tools. Consult the [issues page](https://github.com/netevert/dnsmorph/issues) to see what's in the pipeline and how the project is progressing.
+**DNSMORPH is under active development**, much needs to be done to match and surpass the quality of comparable tools. Consult the [issues page](https://github.com/netevert/dnsmorph/issues) to see what's in the pipeline and how the project is progressing.
 
 License
 =======
