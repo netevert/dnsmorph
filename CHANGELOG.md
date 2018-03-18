@@ -10,5 +10,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - License
 - Readme
 - Contributing guide
-- Homograph attack engine
-- Bitsquat attack engine
+- Homograph attack
+- Bitsquat attack
+- Hyphenation attack
+- Omission attack
+- Repetition attack
+- Replacement attack
+- Subdomain attack
+- Transposition attack
+- Vowel swap attack
+- Addition attack
