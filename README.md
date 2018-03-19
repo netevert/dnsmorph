@@ -1,13 +1,13 @@
 # DNSMORPH
 
 [![baby-gopher](https://raw.githubusercontent.com/drnic/babygopher-site/gh-pages/images/babygopher-logo-small.png)](http://www.babygopher.org)
-[![GitHub release](https://img.shields.io/github/release/dnsmorph/releases.svg)](https://github.com/netevert/dnsmorph/releases)
-[![license](https://img.shields.io/github/license/netevert/dnsmorph.svg)](https://github.com/netevert/dnsmorph/blob/master/LICENSE)
-[![Maintenance](https://img.shields.io/maintenance/yes/2018.svg)]()
-[![](https://img.shields.io/github/issues-raw/netevert/dnsmorph.svg)](https://github.com/netevert/dnsmorph/issues)
-[![](https://img.shields.io/github/issues-closed-raw/netevert/dnsmorph.svg)](https://github.com/netevert/dnsmorph/issues?q=is%3Aissue+is%3Aclosed)
-[![GitHub last commit](https://img.shields.io/github/last-commit/errantbot/dnsmorph.svg)](https://github.com/netevert/dnsmorph/commit/master)
-[![Donations](https://img.shields.io/badge/donate-bitcoin-orange.svg?logo=bitcoin)](https://github.com/netevert/dnsmorph#donations)
+[![GitHub release](https://img.shields.io/github/release/dnsmorph/releases.svg?style=flat-square)](https://github.com/netevert/dnsmorph/releases)
+[![license](https://img.shields.io/github/license/netevert/dnsmorph.svg?style=flat-square)](https://github.com/netevert/dnsmorph/blob/master/LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/netevert/dnsmorph?style=flat-square)](https://goreportcard.com/report/github.com/netevert/dnsmorph)
+[![Maintenance](https://img.shields.io/maintenance/yes/2018.svg?style=flat-square)]()
+[![](https://img.shields.io/github/issues-raw/netevert/dnsmorph.svg?style=flat-square)](https://github.com/netevert/dnsmorph/issues)
+[![GitHub last commit](https://img.shields.io/github/last-commit/errantbot/dnsmorph.svg?style=flat-square)](https://github.com/netevert/dnsmorph/commit/master)
+[![Donations](https://img.shields.io/badge/donate-bitcoin-orange.svg?logo=bitcoin?style=flat-square)](https://github.com/netevert/dnsmorph#donations)
 
 
 DNSMORPH is a domain name permutation engine, broadly inspired by [dnstwist](https://github.com/elceef/dnstwist). It is written in [Go](https://golang.org/) making for a small and fast tool ideal for everyday use. It robustly handles any domain or subdomain supplied and provides a number of configuration options to tune permutation attacks. 
