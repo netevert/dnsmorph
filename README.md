@@ -3,10 +3,10 @@
 [![baby-gopher](https://raw.githubusercontent.com/drnic/babygopher-site/gh-pages/images/babygopher-logo-small.png)](http://www.babygopher.org)
 [![GitHub release](https://img.shields.io/github/release/dnsmorph/releases.svg?style=flat-square)](https://github.com/netevert/dnsmorph/releases)
 [![license](https://img.shields.io/github/license/netevert/dnsmorph.svg?style=flat-square)](https://github.com/netevert/dnsmorph/blob/master/LICENSE)
-[![Build Status](https://travis-ci.org/netevert/dnsmorph.svg?branch=master&style=flat-square)](https://travis-ci.org/netevert/dnsmorph)
+[![Travis](https://img.shields.io/travis/netevert/dnsmorph.svg?style=flat-square)](https://travis-ci.org/netevert/dnsmorph)
 [![Go Report Card](https://goreportcard.com/badge/github.com/netevert/dnsmorph?style=flat-square)](https://goreportcard.com/report/github.com/netevert/dnsmorph)
 [![Maintenance](https://img.shields.io/maintenance/yes/2018.svg?style=flat-square)]()
-[![Coverage Status](https://coveralls.io/repos/github/netevert/dnsmorph/badge.svg?branch=master)](https://coveralls.io/github/netevert/dnsmorph?branch=master)
+[![Coveralls github](https://img.shields.io/coveralls/github/netevert/dnsmorph.svg?style=flat-square)](https://coveralls.io/github/netevert/dnsmorph)
 [![GitHub last commit](https://img.shields.io/github/last-commit/errantbot/dnsmorph.svg?style=flat-square)](https://github.com/netevert/dnsmorph/commit/master)
 [![Donations](https://img.shields.io/badge/donate-bitcoin-orange.svg?logo=bitcoin&style=flat-square)](https://github.com/netevert/dnsmorph#donations)
 
