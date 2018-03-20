@@ -61,6 +61,19 @@ func countChar(word string) map[rune]int {
 	return count
 }
 
+// sanitizes domains inputted into dnsmorph
+func processInput(input string) (sanitizedDomain, tld string) {
+	if *includeSubdomains == false {
+		tldPlusOne, _ := publicsuffix.EffectiveTLDPlusOne(input)
+		tld, _ = publicsuffix.PublicSuffix(tldPlusOne)
+		sanitizedDomain = strings.Replace(tldPlusOne, "."+tld, "", -1)
+	} else if *includeSubdomains == true {
+		tld, _ = publicsuffix.PublicSuffix(input)
+		sanitizedDomain = strings.Replace(input, "."+tld, "", -1)
+	}
+	return sanitizedDomain, tld
+}
+
 // helper function to print permutation report and miscellaneous information
 func printReport(technique string, results []string, tld string, verbose bool) {
 	w := new(tabwriter.Writer)
@@ -81,6 +94,7 @@ func printReport(technique string, results []string, tld string, verbose bool) {
 	}
 }
 
+// helper function to specify permutation attacks to be performed
 func runPermutations(target, tld string) {
 	printReport("addition", additionAttack(target), tld, *verbose)
 	printReport("omission", omissionAttack(target), tld, *verbose)
@@ -301,14 +315,6 @@ func homographAttack(domain string) []string {
 // main program entry point
 func main() {
 	setup()
-	if *includeSubdomains == false {
-		tldPlusOne, _ := publicsuffix.EffectiveTLDPlusOne(*domain)
-		tld, _ := publicsuffix.PublicSuffix(tldPlusOne)
-		sanitizedDomain := strings.Replace(tldPlusOne, "."+tld, "", -1)
-		runPermutations(sanitizedDomain, tld)
-	} else if *includeSubdomains == true {
-		tld, _ := publicsuffix.PublicSuffix(*domain)
-		sanitizedDomain := strings.Replace(*domain, "."+tld, "", -1)
-		runPermutations(sanitizedDomain, tld)
-	}
+	sanitizedDomain, tld := processInput(*domain)
+	runPermutations(sanitizedDomain, tld)
 }
