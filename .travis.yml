@@ -1,7 +1,8 @@
 language: go
 sudo: false
 go:
-  - tip
+  - "1.8.x"
+  - "1.9.x"
 before_install:
   - go get -t -v ./...
   - go get github.com/mattn/goveralls
