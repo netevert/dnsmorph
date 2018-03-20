@@ -23,3 +23,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Travis continuous integration
 - Testing suite
 - Code coverage report
+- Goreleaser release automation

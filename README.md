@@ -11,11 +11,11 @@
 [![Donations](https://img.shields.io/badge/donate-bitcoin-orange.svg?logo=bitcoin&style=flat-square)](https://github.com/netevert/dnsmorph#donations)
 
 
-DNSMORPH is a domain name permutation engine, broadly inspired by [dnstwist](https://github.com/elceef/dnstwist). It is written in [Go](https://golang.org/) making for a small and fast tool ideal for everyday use. It robustly handles any domain or subdomain supplied and provides a number of configuration options to tune permutation attacks. 
+DNSMORPH is a domain name permutation engine, inspired by [dnstwist](https://github.com/elceef/dnstwist). It is written in [Go](https://golang.org/) making for a small and fast tool ideal for everyday use. It robustly handles any domain or subdomain supplied and provides a number of configuration options to tune permutation runs. 
 
 ![demo](https://github.com/netevert/dnsmorph/blob/master/docs/demo.gif)
 
-DNSMORPH includes the following domain permutation attacks:
+DNSMORPH includes the following domain permutation attack types:
 - Homograph attack (both on single and duplicate characters)
 - Bitsquat attack
 - Hyphenation attack
@@ -29,13 +29,15 @@ DNSMORPH includes the following domain permutation attacks:
 
 Installation
 ============
-To install DNSMORPH run the following commands:
+There are two ways to install dnsmorph on your system:
 
-```go get github.com/netevert/dnsmorph```
+1. Download the required pre-compiled binaries from the [latest release page](https://github.com/netevert/dnsmorph/releases) and extract in a directory of your choosing.
 
-`cd /$GOPATH/src/github.com/netevert/dnsmorph`
+2. Downloading and compiling the source code yourself by running the following commands:
 
-`go build`
+    - ```go get github.com/netevert/dnsmorph```
+    - `cd /$GOPATH/src/github.com/netevert/dnsmorph`
+    - `go build`
 
 Usage
 ========

@@ -1,0 +1,21 @@
+# .goreleaser.yml
+project_name: dnsmorph
+# Build customization
+builds:
+  - binary: dnsmorph
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - 386
+# Archive customization
+archive:
+  format: tar.gz
+  replacements:
+    amd64: 64-bit
+    386: 32-bit
+    darwin: macOS
+  files:
+    - dnsmorph.licence.txt
