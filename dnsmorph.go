@@ -13,7 +13,7 @@ import (
 )
 
 // program version
-const version = "1.0.0-dev"
+const version = "1.0.0"
 
 var (
 	g                 = color.New(color.FgHiGreen)
