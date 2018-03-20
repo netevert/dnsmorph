@@ -20,3 +20,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Transposition attack
 - Vowel swap attack
 - Addition attack
+- Travis continuous integration
+- Testing suite
