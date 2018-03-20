@@ -1,4 +1,4 @@
-![Icon](https://github.com/netevert/dnsmorph/tree/master/docs/icon.png)
+![Icon](https://github.com/netevert/dnsmorph/blob/master/docs/icon.png)
 ==================================================================
 [![baby-gopher](https://raw.githubusercontent.com/drnic/babygopher-site/gh-pages/images/babygopher-logo-small.png)](http://www.babygopher.org)
 [![GitHub release](https://img.shields.io/github/release/dnsmorph/releases.svg?style=flat-square)](https://github.com/netevert/dnsmorph/releases)
