@@ -22,3 +22,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Addition attack
 - Travis continuous integration
 - Testing suite
+- Code coverage report
