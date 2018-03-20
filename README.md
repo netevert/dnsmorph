@@ -1,5 +1,5 @@
-# DNSMORPH
-
+![Icon](https://github.com/netevert/dnsmorph/tree/master/docs/icon.png)
+==================================================================
 [![baby-gopher](https://raw.githubusercontent.com/drnic/babygopher-site/gh-pages/images/babygopher-logo-small.png)](http://www.babygopher.org)
 [![GitHub release](https://img.shields.io/github/release/dnsmorph/releases.svg?style=flat-square)](https://github.com/netevert/dnsmorph/releases)
 [![license](https://img.shields.io/github/license/netevert/dnsmorph.svg?style=flat-square)](https://github.com/netevert/dnsmorph/blob/master/LICENSE)
