@@ -32,7 +32,7 @@ var (
 	verbose           = flag.Bool("v", false, "enable verbosity")
 	includeSubdomains = flag.Bool("i", false, "include subdomains")
 	resolve           = flag.Bool("r", false, "resolve domain")
-	utilDescription   = "dnsmorph -d domain [-i] [-v]"
+	utilDescription   = "dnsmorph -d domain [-i] [-v] [-r]"
 	banner            = `
 ╔╦╗╔╗╔╔═╗╔╦╗╔═╗╦═╗╔═╗╦ ╦
  ║║║║║╚═╗║║║║ ║╠╦╝╠═╝╠═╣
@@ -93,8 +93,7 @@ func doLookups(domain string, tld string, out chan<- record) {
 // validates domains using regex
 func validateDomainName(domain string) bool {
 
-	patternStr := `^(([a-zA-Z]{1})|([a-zA-Z]{1}[a-zA-Z]{1})|([a-zA-Z]{1}[0-9]{1})|([0-9]{1}[a-zA-Z]{1})|([a-zA-Z0-9][a-zA-Z0-9-_]{1,61}[a-zA-Z0-9]))\.([a-zA-Z]{2,6}|[a-zA-Z0-9-]{2,30}\.[a-zA-Z
-		]{2,3})$`
+	patternStr := `^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$`
 
 	RegExp := regexp.MustCompile(patternStr)
 	return RegExp.MatchString(domain)

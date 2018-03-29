@@ -44,14 +44,15 @@ Usage
 <details><summary>Usage menu output</summary>
 <p>
 
-    dnsmorph -d domain [-i] [-v]
+    dnsmorph -d domain [-i] [-v] [-r]
       -d string
             target domain
       -i    include subdomains
+      -r    resolve domain
       -v    enable verbosity
 </p>
 </details>
-<details><summary>Run attack against a target domain</summary>
+<details><summary>Run attacks against a target domain</summary>
 <p>
 
     ./dnsmorph -d amazon.com
@@ -60,13 +61,19 @@ Usage
 <details><summary>Include subdomain in attack</summary>
 <p>
 
-    ./dnsmorph -i -d staging.amazon.com
+    ./dnsmorph -d staging.amazon.com -i
+</p>
+</details>
+<details><summary>Run dns resolutions against permutated domains</summary>
+<p>
+
+    ./dnsmorph -d amazon.com -r
 </p>
 </details>
 <details><summary>View types of attack performed (verbose output)</summary>
 <p>
 
-    ./dnsmorph -i -d staging.amazon.com -v
+    ./dnsmorph -d staging.amazon.com -i -v
 </p>
 </details>
 <p></p>
