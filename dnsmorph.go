@@ -12,6 +12,7 @@ import (
 	"sync"
 	"text/tabwriter"
 	"unicode"
+	"regexp"
 )
 
 // program version
@@ -73,6 +74,7 @@ func countChar(word string) map[rune]int {
 	return count
 }
 
+// performs an A record lookup
 func doLookups(domain string, tld string, out chan<- record) {
 	defer wg.Done()
 	r := new(record)
@@ -88,16 +90,33 @@ func doLookups(domain string, tld string, out chan<- record) {
 	// fmt.Println("routine done")
 }
 
+// validates domains using regex
+func validateDomainName(domain string) bool {
+
+	patternStr := `^(([a-zA-Z]{1})|([a-zA-Z]{1}[a-zA-Z]{1})|([a-zA-Z]{1}[0-9]{1})|([0-9]{1}[a-zA-Z]{1})|([a-zA-Z0-9][a-zA-Z0-9-_]{1,61}[a-zA-Z0-9]))\.([a-zA-Z]{2,6}|[a-zA-Z0-9-]{2,30}\.[a-zA-Z
+		]{2,3})$`
+
+	RegExp := regexp.MustCompile(patternStr)
+	return RegExp.MatchString(domain)
+}
+
 // sanitizes domains inputted into dnsmorph
 func processInput(input string) (sanitizedDomain, tld string) {
-	if *includeSubdomains == false {
-		tldPlusOne, _ := publicsuffix.EffectiveTLDPlusOne(input)
-		tld, _ = publicsuffix.PublicSuffix(tldPlusOne)
-		sanitizedDomain = strings.Replace(tldPlusOne, "."+tld, "", -1)
-	} else if *includeSubdomains == true {
-		tld, _ = publicsuffix.PublicSuffix(input)
-		sanitizedDomain = strings.Replace(input, "."+tld, "", -1)
-	}
+	if !validateDomainName(input) {
+		r.Printf("\nplease supply a valid domain\n\n")
+		fmt.Println(utilDescription)
+		flag.PrintDefaults()
+		os.Exit(1)
+	} else {
+		if *includeSubdomains == false {
+			tldPlusOne, _ := publicsuffix.EffectiveTLDPlusOne(input)
+			tld, _ = publicsuffix.PublicSuffix(tldPlusOne)
+			sanitizedDomain = strings.Replace(tldPlusOne, "."+tld, "", -1)
+			} else if *includeSubdomains == true {
+				tld, _ = publicsuffix.PublicSuffix(input)
+				sanitizedDomain = strings.Replace(input, "."+tld, "", -1)
+			}
+		}
 	return sanitizedDomain, tld
 }
 
@@ -126,15 +145,15 @@ func printReport(technique string, results []string, tld string, verbose bool, r
 				}
 			} else {
 				if runtime.GOOS == "windows" {
-					fmt.Fprintln(w, technique+"\t"+i.domain+"."+tld+"\t"+"unallocated"+"\t")
+					fmt.Fprintln(w, technique+"\t"+i.domain+"."+tld+"\t"+"-"+"\t")
 					w.Flush()
 				} else {
-					fmt.Fprintln(w, blue(technique)+"\t"+i.domain+"."+tld+"\t"+red("unallocated")+"\t")
+					fmt.Fprintln(w, blue(technique)+"\t"+i.domain+"."+tld+"\t"+red("-")+"\t")
 					w.Flush()
 				}
 			}
 		}
-	} else if verbose == false && resolve == true {
+	} else if resolve == true {
 		for _, i := range results {
 			wg.Add(1)
 			go doLookups(i, tld, out)
@@ -148,16 +167,19 @@ func printReport(technique string, results []string, tld string, verbose bool, r
 		for _, result := range results {
 			if runtime.GOOS == "windows" {
 				fmt.Fprintln(w, technique+"\t"+result+"."+tld+"\t")
+				w.Flush()
 			} else {
 				fmt.Fprintln(w, blue(technique)+"\t"+result+"."+tld+"\t")
+				w.Flush()
 			}
 		}
 	}
 }
 
-func monitorWorker(wg *sync.WaitGroup, cs chan record) {
+// helper function to wait for goroutines collection to finish and close channel
+func monitorWorker(wg *sync.WaitGroup, channel chan record) {
 	wg.Wait()
-	close(cs)
+	close(channel)
 }
 
 // helper function to specify permutation attacks to be performed
