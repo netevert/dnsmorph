@@ -5,31 +5,44 @@ import (
 	"fmt"
 	"github.com/fatih/color"
 	"golang.org/x/net/publicsuffix"
+	"net"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"text/tabwriter"
 	"unicode"
 )
 
 // program version
-const version = "1.0.2"
+const version = "1.1.0"
 
 var (
 	g                 = color.New(color.FgHiGreen)
 	y                 = color.New(color.FgYellow)
 	r                 = color.New(color.FgHiRed)
-	b                 = color.New(color.FgBlue)
 	blue              = color.New(color.FgBlue).SprintFunc()
+	yellow            = color.New(color.FgYellow).SprintFunc()
+	white             = color.New(color.FgWhite).SprintFunc()
+	red               = color.New(color.FgRed).SprintFunc()
+	w                 = new(tabwriter.Writer)
+	wg                = &sync.WaitGroup{}
 	domain            = flag.String("d", "", "target domain")
 	verbose           = flag.Bool("v", false, "enable verbosity")
 	includeSubdomains = flag.Bool("i", false, "include subdomains")
-	utilDescription   = "dnsmorph -d domain [-i] [-v]"
+	resolve           = flag.Bool("r", false, "resolve domain")
+	utilDescription   = "dnsmorph -d domain [-i] [-v] [-r]"
 	banner            = `
 ╔╦╗╔╗╔╔═╗╔╦╗╔═╗╦═╗╔═╗╦ ╦
  ║║║║║╚═╗║║║║ ║╠╦╝╠═╝╠═╣
 ═╩╝╝╚╝╚═╝╩ ╩╚═╝╩╚═╩  ╩ ╩` // Calvin S on http://patorjk.com/
 )
+
+type record struct {
+	domain string
+	a      []string
+}
 
 // sets up command-line arguments
 func setup() {
@@ -61,51 +74,125 @@ func countChar(word string) map[rune]int {
 	return count
 }
 
+// performs an A record lookup
+func doLookups(domain string, tld string, out chan<- record) {
+	defer wg.Done()
+	r := new(record)
+	r.domain = domain
+	ip, err := net.ResolveIPAddr("ip4", r.domain+"."+tld)
+	if err != nil {
+		r.a = []string{""}
+
+	} else {
+		r.a = append(r.a, ip.String())
+	}
+	out <- *r
+	// fmt.Println("routine done")
+}
+
+// validates domains using regex
+func validateDomainName(domain string) bool {
+
+	patternStr := `^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$`
+
+	RegExp := regexp.MustCompile(patternStr)
+	return RegExp.MatchString(domain)
+}
+
 // sanitizes domains inputted into dnsmorph
 func processInput(input string) (sanitizedDomain, tld string) {
-	if *includeSubdomains == false {
-		tldPlusOne, _ := publicsuffix.EffectiveTLDPlusOne(input)
-		tld, _ = publicsuffix.PublicSuffix(tldPlusOne)
-		sanitizedDomain = strings.Replace(tldPlusOne, "."+tld, "", -1)
-	} else if *includeSubdomains == true {
-		tld, _ = publicsuffix.PublicSuffix(input)
-		sanitizedDomain = strings.Replace(input, "."+tld, "", -1)
+	if !validateDomainName(input) {
+		r.Printf("\nplease supply a valid domain\n\n")
+		fmt.Println(utilDescription)
+		flag.PrintDefaults()
+		os.Exit(1)
+	} else {
+		if *includeSubdomains == false {
+			tldPlusOne, _ := publicsuffix.EffectiveTLDPlusOne(input)
+			tld, _ := publicsuffix.PublicSuffix(tldPlusOne)
+			sanitizedDomain = strings.Replace(tldPlusOne, "."+tld, "", -1)
+		} else if *includeSubdomains == true {
+			tld, _ := publicsuffix.PublicSuffix(input)
+			sanitizedDomain = strings.Replace(input, "."+tld, "", -1)
+		}
 	}
 	return sanitizedDomain, tld
 }
 
 // helper function to print permutation report and miscellaneous information
-func printReport(technique string, results []string, tld string, verbose bool) {
-	w := new(tabwriter.Writer)
+func printReport(technique string, results []string, tld string, verbose bool, resolve bool) {
+	out := make(chan record)
 	w.Init(os.Stdout, 0, 8, 2, '\t', tabwriter.TabIndent|tabwriter.AlignRight)
-	if verbose == false {
+	if verbose == false && resolve == false {
 		for _, result := range results {
 			fmt.Println(result + "." + tld)
+		}
+	} else if verbose == true && resolve == true {
+		for _, i := range results {
+			wg.Add(1)
+			go doLookups(i, tld, out)
+		}
+		go monitorWorker(wg, out)
+		for i := range out {
+			if i.a[0] != "" {
+				if runtime.GOOS == "windows" {
+					fmt.Fprintln(w, technique+"\t"+i.domain+"."+tld+"\t"+"A: "+strings.Join(i.a, ",")+"\t")
+					w.Flush()
+				} else {
+					fmt.Fprintln(w, blue(technique)+"\t"+i.domain+"."+tld+"\t"+white("A: ")+yellow(strings.Join(i.a, ","))+"\t")
+					w.Flush()
+				}
+			} else {
+				if runtime.GOOS == "windows" {
+					fmt.Fprintln(w, technique+"\t"+i.domain+"."+tld+"\t"+"-"+"\t")
+					w.Flush()
+				} else {
+					fmt.Fprintln(w, blue(technique)+"\t"+i.domain+"."+tld+"\t"+red("-")+"\t")
+					w.Flush()
+				}
+			}
+		}
+	} else if resolve == true {
+		for _, i := range results {
+			wg.Add(1)
+			go doLookups(i, tld, out)
+		}
+		go monitorWorker(wg, out)
+		for i := range out {
+			fmt.Fprintln(w, i.domain+"."+tld+"\t"+i.a[0]+"\t")
+			w.Flush()
 		}
 	} else if verbose == true {
 		for _, result := range results {
 			if runtime.GOOS == "windows" {
 				fmt.Fprintln(w, technique+"\t"+result+"."+tld+"\t")
+				w.Flush()
 			} else {
 				fmt.Fprintln(w, blue(technique)+"\t"+result+"."+tld+"\t")
+				w.Flush()
 			}
 		}
-		w.Flush()
 	}
+}
+
+// helper function to wait for goroutines collection to finish and close channel
+func monitorWorker(wg *sync.WaitGroup, channel chan record) {
+	wg.Wait()
+	close(channel)
 }
 
 // helper function to specify permutation attacks to be performed
 func runPermutations(target, tld string) {
-	printReport("addition", additionAttack(target), tld, *verbose)
-	printReport("omission", omissionAttack(target), tld, *verbose)
-	printReport("homograph", homographAttack(target), tld, *verbose)
-	printReport("subdomain", subdomainAttack(target), tld, *verbose)
-	printReport("vowel swap", vowelswapAttack(target), tld, *verbose)
-	printReport("repetition", repetitionAttack(target), tld, *verbose)
-	printReport("hyphenation", hyphenationAttack(target), tld, *verbose)
-	printReport("replacement", replacementAttack(target), tld, *verbose)
-	printReport("bitsquatting", bitsquattingAttack(target), tld, *verbose)
-	printReport("transposition", transpositionAttack(target), tld, *verbose)
+	printReport("addition", additionAttack(target), tld, *verbose, *resolve)
+	printReport("omission", omissionAttack(target), tld, *verbose, *resolve)
+	printReport("homograph", homographAttack(target), tld, *verbose, *resolve)
+	printReport("subdomain", subdomainAttack(target), tld, *verbose, *resolve)
+	printReport("vowel swap", vowelswapAttack(target), tld, *verbose, *resolve)
+	printReport("repetition", repetitionAttack(target), tld, *verbose, *resolve)
+	printReport("hyphenation", hyphenationAttack(target), tld, *verbose, *resolve)
+	printReport("replacement", replacementAttack(target), tld, *verbose, *resolve)
+	printReport("bitsquatting", bitsquattingAttack(target), tld, *verbose, *resolve)
+	printReport("transposition", transpositionAttack(target), tld, *verbose, *resolve)
 }
 
 // performs an addition attack adding a single character to the domain

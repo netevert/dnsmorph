@@ -11,7 +11,7 @@
 [![Donations](https://img.shields.io/badge/donate-bitcoin-orange.svg?logo=bitcoin&style=flat-square)](https://github.com/netevert/dnsmorph#donations)
 
 
-DNSMORPH is a domain name permutation engine, inspired by [dnstwist](https://github.com/elceef/dnstwist). It is written in [Go](https://golang.org/) making for a small and fast tool ideal for everyday use. It robustly handles any domain or subdomain supplied and provides a number of configuration options to tune permutation runs. 
+DNSMORPH is a domain name permutation engine, inspired by [dnstwist](https://github.com/elceef/dnstwist). It is written in [Go](https://golang.org/) making for a compact and **very** fast tool. It robustly handles any domain or subdomain supplied and provides a number of configuration options to tune permutation runs. 
 
 ![demo](https://github.com/netevert/dnsmorph/blob/master/docs/demo.gif)
 
@@ -44,14 +44,15 @@ Usage
 <details><summary>Usage menu output</summary>
 <p>
 
-    dnsmorph -d domain [-i] [-v]
+    dnsmorph -d domain [-i] [-v] [-r]
       -d string
             target domain
       -i    include subdomains
+      -r    resolve domain
       -v    enable verbosity
 </p>
 </details>
-<details><summary>Run attack against a target domain</summary>
+<details><summary>Run attacks against a target domain</summary>
 <p>
 
     ./dnsmorph -d amazon.com
@@ -60,13 +61,19 @@ Usage
 <details><summary>Include subdomain in attack</summary>
 <p>
 
-    ./dnsmorph -i -d staging.amazon.com
+    ./dnsmorph -d staging.amazon.com -i
+</p>
+</details>
+<details><summary>Run dns resolutions against permutated domains</summary>
+<p>
+
+    ./dnsmorph -d amazon.com -r
 </p>
 </details>
 <details><summary>View types of attack performed (verbose output)</summary>
 <p>
 
-    ./dnsmorph -i -d staging.amazon.com -v
+    ./dnsmorph -d staging.amazon.com -i -v
 </p>
 </details>
 <p></p>
