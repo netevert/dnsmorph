@@ -36,7 +36,7 @@ func TestDomainValidation(t *testing.T) {
 		t.Error("expected 'test' to be an invalid domain")
 	}
 }
-
+/*
 func TestDoLookups(t *testing.T) {
 	expected := record{"startpage.com", []string{}}
 	results := []record{}
@@ -57,7 +57,7 @@ func TestDoLookups(t *testing.T) {
 		t.Error("expected A records to be identical")
 	}
 }
-
+*/
 /*
 Permutation attack functions tests
 */
