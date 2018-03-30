@@ -7,12 +7,12 @@ import (
 	"golang.org/x/net/publicsuffix"
 	"net"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
 	"sync"
 	"text/tabwriter"
 	"unicode"
-	"regexp"
 )
 
 // program version
@@ -109,13 +109,13 @@ func processInput(input string) (sanitizedDomain, tld string) {
 	} else {
 		if *includeSubdomains == false {
 			tldPlusOne, _ := publicsuffix.EffectiveTLDPlusOne(input)
-			tld, _ = publicsuffix.PublicSuffix(tldPlusOne)
+			tld, _ := publicsuffix.PublicSuffix(tldPlusOne)
 			sanitizedDomain = strings.Replace(tldPlusOne, "."+tld, "", -1)
-			} else if *includeSubdomains == true {
-				tld, _ = publicsuffix.PublicSuffix(input)
-				sanitizedDomain = strings.Replace(input, "."+tld, "", -1)
-			}
+		} else if *includeSubdomains == true {
+			tld, _ := publicsuffix.PublicSuffix(input)
+			sanitizedDomain = strings.Replace(input, "."+tld, "", -1)
 		}
+	}
 	return sanitizedDomain, tld
 }
 

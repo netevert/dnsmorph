@@ -11,7 +11,7 @@
 [![Donations](https://img.shields.io/badge/donate-bitcoin-orange.svg?logo=bitcoin&style=flat-square)](https://github.com/netevert/dnsmorph#donations)
 
 
-DNSMORPH is a domain name permutation engine, inspired by [dnstwist](https://github.com/elceef/dnstwist). It is written in [Go](https://golang.org/) making for a small and fast tool ideal for everyday use. It robustly handles any domain or subdomain supplied and provides a number of configuration options to tune permutation runs. 
+DNSMORPH is a domain name permutation engine, inspired by [dnstwist](https://github.com/elceef/dnstwist). It is written in [Go](https://golang.org/) making for a compact and **very** fast tool. It robustly handles any domain or subdomain supplied and provides a number of configuration options to tune permutation runs. 
 
 ![demo](https://github.com/netevert/dnsmorph/blob/master/docs/demo.gif)
 
