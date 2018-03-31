@@ -31,7 +31,7 @@ Installation
 ============
 There are two ways to install dnsmorph on your system:
 
-1. Download the required pre-compiled binaries from the [latest release page](https://github.com/netevert/dnsmorph/releases) and extract in a directory of your choosing.
+1. Downloading the pre-compiled binaries for your platform from the [latest release page](https://github.com/netevert/dnsmorph/releases) and extracting in a directory of your choosing.
 
 2. Downloading and compiling the source code yourself by running the following commands:
 
