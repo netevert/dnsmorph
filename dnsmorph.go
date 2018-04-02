@@ -16,16 +16,16 @@ import (
 )
 
 // program version
-const version = "1.1.1"
+const version = "1.1.3"
 
 var (
 	g                 = color.New(color.FgHiGreen)
-	y                 = color.New(color.FgYellow)
+	y                 = color.New(color.FgHiYellow)
 	r                 = color.New(color.FgHiRed)
-	blue              = color.New(color.FgBlue).SprintFunc()
-	yellow            = color.New(color.FgYellow).SprintFunc()
+	blue              = color.New(color.FgHiBlue).SprintFunc()
+	yellow            = color.New(color.FgHiYellow).SprintFunc()
 	white             = color.New(color.FgWhite).SprintFunc()
-	red               = color.New(color.FgRed).SprintFunc()
+	red               = color.New(color.FgHiRed).SprintFunc()
 	w                 = new(tabwriter.Writer)
 	wg                = &sync.WaitGroup{}
 	domain            = flag.String("d", "", "target domain")
