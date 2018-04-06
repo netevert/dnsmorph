@@ -33,7 +33,7 @@ var (
 	verbose           = flag.Bool("v", false, "enable verbosity")
 	includeSubdomains = flag.Bool("i", false, "include subdomains")
 	resolve           = flag.Bool("r", false, "resolve domain")
-	utilDescription   = "dnsmorph -d domain [-i] [-v] [-r]"
+	utilDescription   = "dnsmorph -d domain [-g] [-i] [-r] [-v]"
 	banner            = `
 ╔╦╗╔╗╔╔═╗╔╦╗╔═╗╦═╗╔═╗╦ ╦
  ║║║║║╚═╗║║║║ ║╠╦╝╠═╝╠═╣
