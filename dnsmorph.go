@@ -29,6 +29,7 @@ var (
 	w                 = new(tabwriter.Writer)
 	wg                = &sync.WaitGroup{}
 	domain            = flag.String("d", "", "target domain")
+	geolocate         = flag.Bool("g", false, "geolocate domain")
 	verbose           = flag.Bool("v", false, "enable verbosity")
 	includeSubdomains = flag.Bool("i", false, "include subdomains")
 	resolve           = flag.Bool("r", false, "resolve domain")
@@ -89,13 +90,17 @@ func aLookup(domain string, tld string) []string {
 }
 
 // performs an A record lookup
-func doLookups(domain string, tld string, out chan<- record) {
+func doLookups(domain string, tld string, out chan<- record, resolve, geolocate bool) {
 	defer wg.Done()
 	r := new(record)
 	r.domain = domain
-	r.a = aLookup(r.domain, tld)
+	if resolve {
+		r.a = aLookup(r.domain, tld)
+	}
+	if geolocate {
+		r.geolocation = "Some location"
+	}
 	out <- *r
-	// fmt.Println("routine done")
 }
 
 // validates domains using regex
@@ -128,17 +133,42 @@ func processInput(input string) (sanitizedDomain, tld string) {
 }
 
 // helper function to print permutation report and miscellaneous information
-func printReport(technique string, results []string, tld string, verbose bool, resolve bool) {
+func printReport(technique string, results []string, tld string) {
 	out := make(chan record)
 	w.Init(os.Stdout, 0, 8, 2, '\t', tabwriter.TabIndent|tabwriter.AlignRight)
-	if verbose == false && resolve == false {
+	if *verbose == false && *resolve == false {
 		for _, result := range results {
 			fmt.Println(result + "." + tld)
 		}
-	} else if verbose == true && resolve == true {
+	} else if *verbose == true && *resolve == true && *geolocate == true {
 		for _, i := range results {
 			wg.Add(1)
-			go doLookups(i, tld, out)
+			go doLookups(i, tld, out, *verbose, *geolocate)
+		}
+		go monitorWorker(wg, out)
+		for i := range out {
+			if i.a[0] != "" && i.geolocation != "" {
+				if runtime.GOOS == "windows" {
+					fmt.Fprintln(w, technique+"\t"+i.domain+"."+tld+"\t"+"A: "+strings.Join(i.a, ",")+"\t"+"GEO: "+i.geolocation+"\t")
+					w.Flush()
+				} else {
+					fmt.Fprintln(w, blue(technique)+"\t"+i.domain+"."+tld+"\t"+white("A: ")+yellow(strings.Join(i.a, ","))+"\t"+white("GEO: ")+yellow(i.geolocation)+"\t")
+					w.Flush()
+				}
+			} else {
+				if runtime.GOOS == "windows" {
+					fmt.Fprintln(w, technique+"\t"+i.domain+"."+tld+"\t"+"A: -"+"\t"+"GEO: -"+"\t")
+					w.Flush()
+				} else {
+					fmt.Fprintln(w, blue(technique)+"\t"+i.domain+"."+tld+"\t"+white("A: ")+red("-")+"\t"+white("GEO: ")+red("-")+"\t")
+					w.Flush()
+				}
+			}
+		}
+	} else if *verbose == true && *resolve == true {
+		for _, i := range results {
+			wg.Add(1)
+			go doLookups(i, tld, out, *verbose, *geolocate)
 		}
 		go monitorWorker(wg, out)
 		for i := range out {
@@ -160,17 +190,17 @@ func printReport(technique string, results []string, tld string, verbose bool, r
 				}
 			}
 		}
-	} else if resolve == true {
+	} else if *resolve == true {
 		for _, i := range results {
 			wg.Add(1)
-			go doLookups(i, tld, out)
+			go doLookups(i, tld, out, *verbose, *geolocate)
 		}
 		go monitorWorker(wg, out)
 		for i := range out {
 			fmt.Fprintln(w, i.domain+"."+tld+"\t"+i.a[0]+"\t")
 			w.Flush()
 		}
-	} else if verbose == true {
+	} else if *verbose == true {
 		for _, result := range results {
 			if runtime.GOOS == "windows" {
 				fmt.Fprintln(w, technique+"\t"+result+"."+tld+"\t")
@@ -191,16 +221,16 @@ func monitorWorker(wg *sync.WaitGroup, channel chan record) {
 
 // helper function to specify permutation attacks to be performed
 func runPermutations(target, tld string) {
-	printReport("addition", additionAttack(target), tld, *verbose, *resolve)
-	printReport("omission", omissionAttack(target), tld, *verbose, *resolve)
-	printReport("homograph", homographAttack(target), tld, *verbose, *resolve)
-	printReport("subdomain", subdomainAttack(target), tld, *verbose, *resolve)
-	printReport("vowel swap", vowelswapAttack(target), tld, *verbose, *resolve)
-	printReport("repetition", repetitionAttack(target), tld, *verbose, *resolve)
-	printReport("hyphenation", hyphenationAttack(target), tld, *verbose, *resolve)
-	printReport("replacement", replacementAttack(target), tld, *verbose, *resolve)
-	printReport("bitsquatting", bitsquattingAttack(target), tld, *verbose, *resolve)
-	printReport("transposition", transpositionAttack(target), tld, *verbose, *resolve)
+	printReport("addition", additionAttack(target), tld)
+	printReport("omission", omissionAttack(target), tld)
+	printReport("homograph", homographAttack(target), tld)
+	printReport("subdomain", subdomainAttack(target), tld)
+	printReport("vowel swap", vowelswapAttack(target), tld)
+	printReport("repetition", repetitionAttack(target), tld)
+	printReport("hyphenation", hyphenationAttack(target), tld)
+	printReport("replacement", replacementAttack(target), tld)
+	printReport("bitsquatting", bitsquattingAttack(target), tld)
+	printReport("transposition", transpositionAttack(target), tld)
 }
 
 // performs an addition attack adding a single character to the domain
