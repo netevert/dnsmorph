@@ -42,6 +42,7 @@ var (
 type record struct {
 	domain string
 	a      []string
+	geolocation string
 }
 
 // sets up command-line arguments
@@ -74,18 +75,25 @@ func countChar(word string) map[rune]int {
 	return count
 }
 
+// performs an A recors DNS lookup
+func aLookup(domain string, tld string) []string {
+	ips:= []string{}
+	ip, err := net.ResolveIPAddr("ip4", domain+"."+tld)
+	if err != nil {
+		ips = []string{""}
+
+	} else {
+		ips = append(ips, ip.String())
+	}
+	return ips
+}
+
 // performs an A record lookup
 func doLookups(domain string, tld string, out chan<- record) {
 	defer wg.Done()
 	r := new(record)
 	r.domain = domain
-	ip, err := net.ResolveIPAddr("ip4", r.domain+"."+tld)
-	if err != nil {
-		r.a = []string{""}
-
-	} else {
-		r.a = append(r.a, ip.String())
-	}
+	r.a = aLookup(r.domain, tld)
 	out <- *r
 	// fmt.Println("routine done")
 }
