@@ -131,19 +131,15 @@ func processInput(input string) (sanitizedDomain, tld string) {
 	}
 	return sanitizedDomain, tld
 }
-
+		
 // helper function to print permutation report and miscellaneous information
 func printReport(technique string, results []string, tld string) {
 	out := make(chan record)
-	w.Init(os.Stdout, 0, 8, 2, '\t', tabwriter.TabIndent|tabwriter.AlignRight)
-	if *verbose == false && *resolve == false {
-		for _, result := range results {
-			fmt.Println(result + "." + tld)
-		}
-	} else if *verbose == true && *resolve == true && *geolocate == true {
+	w.Init(os.Stdout, 18, 8, 2, '\t', 0)
+	if *verbose == true && *resolve == true && *geolocate == true {
 		for _, i := range results {
 			wg.Add(1)
-			go doLookups(i, tld, out, *verbose, *geolocate)
+			go doLookups(i, tld, out, *resolve, *geolocate)
 		}
 		go monitorWorker(wg, out)
 		for i := range out {
@@ -185,7 +181,7 @@ func printReport(technique string, results []string, tld string) {
 	} else if *verbose == true && *resolve == true {
 		for _, i := range results {
 			wg.Add(1)
-			go doLookups(i, tld, out, *verbose, *geolocate)
+			go doLookups(i, tld, out, *resolve, *geolocate)
 		}
 		go monitorWorker(wg, out)
 		for i := range out {
@@ -207,11 +203,16 @@ func printReport(technique string, results []string, tld string) {
 				}
 			}
 		}
+	} else if *geolocate == true {
+		fmt.Println("run geolocation report")
+	} else if *verbose == false && *resolve == false {
+		for _, result := range results {
+			fmt.Println(result + "." + tld)
+		}
 	} else if *resolve == true {
 		for _, i := range results {
-			fmt.Println("DEBUG: adding", i)
 			wg.Add(1)
-			go doLookups(i, tld, out, *verbose, *geolocate)
+			go doLookups(i, tld, out, *resolve, *geolocate)
 		}
 		go monitorWorker(wg, out)
 		for i := range out {
@@ -418,7 +419,7 @@ func homographAttack(domain string) []string {
 		'l': {'1', 'i', 'ɫ', 'ł'},
 		'm': {'n', 'ṃ', 'ᴍ', 'м', 'ɱ'}, // 'nn', 'rn', 'rr'
 		'n': {'m', 'r', 'ń'},
-		'o': {'0', 'Ο', 'ο', 'О', 'о', 'Օ', 'ȯ', 'ọ', 'ỏ', 'ơ', 'ó', 'ö', 'ӧ', 'ｏ'},
+		'o': {'0', 'Ο', 'ο', 'О', 'о', 'Օ', 'ȯ', 'ọ', 'ỏ', 'ơ', 'ó', 'ö', 'ӧ'},
 		'p': {'ρ', 'р', 'ƿ', 'Ϸ', 'Þ'},
 		'q': {'g', 'զ', 'ԛ', 'գ', 'ʠ'},
 		'r': {'ʀ', 'Г', 'ᴦ', 'ɼ', 'ɽ'},
