@@ -90,7 +90,7 @@ func aLookup(domain string, tld string) []string {
 }
 
 // performs an A record lookup
-func doLookups(domain string, tld string, out chan<- record, resolve, geolocate bool) {
+func doLookups(domain, tld string, out chan<- record, resolve, geolocate bool) {
 	defer wg.Done()
 	r := new(record)
 	r.domain = domain
@@ -149,10 +149,27 @@ func printReport(technique string, results []string, tld string) {
 		for i := range out {
 			if i.a[0] != "" && i.geolocation != "" {
 				if runtime.GOOS == "windows" {
+					// switch A and GEO records
 					fmt.Fprintln(w, technique+"\t"+i.domain+"."+tld+"\t"+"A: "+strings.Join(i.a, ",")+"\t"+"GEO: "+i.geolocation+"\t")
 					w.Flush()
 				} else {
 					fmt.Fprintln(w, blue(technique)+"\t"+i.domain+"."+tld+"\t"+white("A: ")+yellow(strings.Join(i.a, ","))+"\t"+white("GEO: ")+yellow(i.geolocation)+"\t")
+					w.Flush()
+				}
+			} else if i.a[0] != "" && i.geolocation == "" {
+				if runtime.GOOS == "windows" {
+					fmt.Fprintln(w, technique+"\t"+i.domain+"."+tld+"\t"+"A: "+strings.Join(i.a, ",")+"\t"+"GEO: -"+"\t")
+					w.Flush()
+				} else {
+					fmt.Fprintln(w, blue(technique)+"\t"+i.domain+"."+tld+"\t"+white("A: ")+yellow(strings.Join(i.a, ","))+"\t"+white("GEO: ")+red("-")+"\t")
+					w.Flush()
+				}
+			} else if i.a[0] == "" && i.geolocation != "" {
+				if runtime.GOOS == "windows" {
+					fmt.Fprintln(w, technique+"\t"+i.domain+"."+tld+"\t"+"A: -"+"\t"+"GEO: "+i.geolocation+"\t")
+					w.Flush()
+				} else {
+					fmt.Fprintln(w, blue(technique)+"\t"+i.domain+"."+tld+"\t"+white("A:")+red("-")+"\t"+white("GEO: ")+red("-")+"\t")
 					w.Flush()
 				}
 			} else {
@@ -192,6 +209,7 @@ func printReport(technique string, results []string, tld string) {
 		}
 	} else if *resolve == true {
 		for _, i := range results {
+			fmt.Println("DEBUG: adding", i)
 			wg.Add(1)
 			go doLookups(i, tld, out, *verbose, *geolocate)
 		}
