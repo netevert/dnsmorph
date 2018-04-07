@@ -203,8 +203,12 @@ func printReport(technique string, results []string, tld string) {
 				}
 			}
 		}
-	} else if *geolocate == true {
-		fmt.Println("run geolocation report")
+	} else if *verbose == true && *geolocate == true {
+		// todo
+	} else if *resolve == true && *geolocate == true {
+        // todo
+	}else if *geolocate == true {
+		// todo
 	} else if *verbose == false && *resolve == false {
 		for _, result := range results {
 			fmt.Println(result + "." + tld)
