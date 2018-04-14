@@ -4,7 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"github.com/fatih/color"
+	"github.com/oschwald/maxminddb-golang"
 	"golang.org/x/net/publicsuffix"
+	"log"
 	"net"
 	"os"
 	"regexp"
@@ -16,7 +18,7 @@ import (
 )
 
 // program version
-const version = "1.1.3"
+const version = "1.2.0"
 
 var (
 	g                 = color.New(color.FgHiGreen)
@@ -44,6 +46,15 @@ type record struct {
 	domain string
 	a      []string
 	geolocation string
+}
+
+type GeoIPRecord struct {
+	City struct {
+		Names     map[string]string `maxminddb:"names"`
+	} `maxminddb:"city"`
+	Country struct {
+		IsoCode           string            `maxminddb:"iso_code"`
+	} `maxminddb:"country"`
 }
 
 // sets up command-line arguments
@@ -77,7 +88,7 @@ func countChar(word string) map[rune]int {
 }
 
 // performs an A recors DNS lookup
-func aLookup(domain string, tld string) []string {
+func aLookup(domain, tld string) []string {
 	ips:= []string{}
 	ip, err := net.ResolveIPAddr("ip4", domain+"."+tld)
 	if err != nil {
@@ -86,7 +97,23 @@ func aLookup(domain string, tld string) []string {
 	} else {
 		ips = append(ips, ip.String())
 	}
-	return ips
+	return ips  // todo: fix so that only one IP is returned
+}
+
+// performs a geolocation lookup on input ip, returns country + city
+func geoLookup(input_ip string) (isoCode, city string) {
+	db, err := maxminddb.Open("data/GeoLite2-City.mmdb")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	ip := net.ParseIP(input_ip)
+	var record GeoIPRecord
+	err = db.Lookup(ip, &record)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return record.Country.IsoCode, record.City.Names["en"]
 }
 
 // performs an A record lookup
@@ -98,7 +125,7 @@ func doLookups(domain, tld string, out chan<- record, resolve, geolocate bool) {
 		r.a = aLookup(r.domain, tld)
 	}
 	if geolocate {
-		r.geolocation = "Some location"
+		r.geolocation = geoLookup(string(r.a[0]))
 	}
 	out <- *r
 }
