@@ -33,7 +33,7 @@ var (
 	domain            = flag.String("d", "", "target domain")
 	geolocate         = flag.Bool("g", false, "geolocate domain")
 	verbose           = flag.Bool("v", false, "enable verbosity")
-	includeSubdomains = flag.Bool("i", false, "include subdomains")
+	includeSubdomains = flag.Bool("i", false, "include subdomain")
 	resolve           = flag.Bool("r", false, "resolve domain")
 	utilDescription   = "dnsmorph -d domain [-g] [-i] [-r] [-v]"
 	banner            = `
@@ -42,19 +42,170 @@ var (
 ═╩╝╝╚╝╚═╝╩ ╩╚═╝╩╚═╩  ╩ ╩` // Calvin S on http://patorjk.com/
 )
 
-type record struct {
-	domain string
-	a      []string
+type GeoIPRecord struct {
+	City struct {
+		Names map[string]string `maxminddb:"names"`
+	} `maxminddb:"city"`
+	Country struct {
+		IsoCode string `maxminddb:"iso_code"`
+	} `maxminddb:"country"`
+}
+
+type Record struct {
+	domain      string
+	a           string
 	geolocation string
 }
 
-type GeoIPRecord struct {
-	City struct {
-		Names     map[string]string `maxminddb:"names"`
-	} `maxminddb:"city"`
-	Country struct {
-		IsoCode           string            `maxminddb:"iso_code"`
-	} `maxminddb:"country"`
+// prints all Record data
+func (r *Record) printAll(writer *tabwriter.Writer, technique string, verbose bool) {
+	if runtime.GOOS == "windows" {
+		if verbose != false {
+			fmt.Fprintln(writer, technique+"\t"+r.domain+"\t"+"A:"+r.a+"\t"+"GEO:"+r.geolocation+"\t")
+			writer.Flush()
+		} else {
+			fmt.Fprintln(writer, r.domain+"\t"+r.a+"\t"+r.geolocation+"\t")
+			writer.Flush()	
+		}
+	} else {
+		if verbose != false {
+			fmt.Fprintln(writer, blue(technique)+"\t"+r.domain+"\t"+white("A:")+yellow(r.a)+"\t"+white("GEO:")+yellow(r.geolocation)+"\t")
+			writer.Flush()
+		} else {
+			fmt.Fprintln(writer, r.domain+"\t"+yellow(r.a)+"\t"+yellow(r.geolocation)+"\t")
+			writer.Flush()
+		}
+	}
+}
+
+// print method for Record structs that have A data but not geolocation data
+func (r *Record) printANotGeo(writer *tabwriter.Writer, technique string, verbose bool) {
+	if runtime.GOOS == "windows" {
+		if verbose != false {
+			fmt.Fprintln(writer, technique+"\t"+r.domain+"\t"+"A:"+r.a+"\t"+"GEO:-"+"\t")
+			writer.Flush()
+		} else {
+			fmt.Fprintln(writer, r.domain+"\t"+r.a+"\t"+""+"\t")
+			writer.Flush()
+		}
+	} else {
+		if verbose != false {
+			fmt.Fprintln(writer, blue(technique)+"\t"+r.domain+"\t"+white("A:")+yellow(r.a)+"\t"+white("GEO:")+red("-")+"\t")
+			writer.Flush()
+		} else {
+			fmt.Fprintln(writer, r.domain+"\t"+yellow(r.a)+"\t"+""+"\t")
+			writer.Flush()
+		}
+	}
+}
+
+// print method for Record structs that have geolocation data but not A data
+func (r *Record) printGeoNotA(writer *tabwriter.Writer, technique string, verbose bool) {
+	if runtime.GOOS == "windows" {
+		if verbose != true {
+			fmt.Fprintln(writer, technique+"\t"+r.domain+"\t"+"A:-"+"\t"+"GEO:"+r.geolocation+"\t")
+			writer.Flush()
+		} else {
+			fmt.Fprintln(writer, r.domain+"\t"+""+"\t"+r.geolocation+"\t")
+			writer.Flush()
+		}
+	} else {
+		if verbose != false {
+			fmt.Fprintln(writer, blue(technique)+"\t"+r.domain+"\t"+white("A:")+red("-")+"\t"+white("GEO:")+yellow(r.geolocation)+"\t")
+			writer.Flush()
+		} else {
+			fmt.Fprintln(writer, r.domain+"\t"+""+"\t"+yellow(r.geolocation)+"\t")
+			writer.Flush()
+		}
+	}
+}
+
+// print method for empty Record structs
+func (r *Record) printEmptyRecord(writer *tabwriter.Writer, technique string, verbose bool) {
+	if runtime.GOOS == "windows" {
+		if verbose != false {
+			fmt.Fprintln(writer, technique+"\t"+r.domain+"\t"+"A:-"+"\t"+"GEO:-"+"\t")
+			writer.Flush()
+		} else {
+			fmt.Fprintln(writer, r.domain+"\t"+""+"\t"+""+"\t")
+			writer.Flush()
+		}
+	} else {
+		if verbose != false {
+			fmt.Fprintln(writer, blue(technique)+"\t"+r.domain+"\t"+white("A:")+red("-")+"\t"+white("GEO:")+red("-")+"\t")
+			writer.Flush()
+		} else {
+			fmt.Fprintln(writer, r.domain+"\t"+""+"\t"+""+"\t")
+			writer.Flush()
+		}
+	}
+}
+
+// prints A record data non verbosely
+func (r *Record) printARecord(writer *tabwriter.Writer) {
+	fmt.Fprintln(writer, r.domain+"\t"+r.a+"\t")
+	writer.Flush()
+}
+
+// prints geolocation record data non verbosely
+func (r *Record) printGeoRecord(writer *tabwriter.Writer) {
+	fmt.Fprintln(writer, r.domain+"\t"+r.geolocation+"\t")
+	writer.Flush()
+}
+
+// prints A record data verbosely
+func (r *Record) printARecordVerbose(writer *tabwriter.Writer, technique string) {
+	if runtime.GOOS == "windows" {
+		fmt.Fprintln(writer, technique+"\t"+r.domain+"\t"+"A:"+r.a+"\t")
+		writer.Flush()
+	} else {
+		fmt.Fprintln(writer, blue(technique)+"\t"+r.domain+"\t"+white("A:")+yellow(r.a)+"\t")
+		writer.Flush()
+	}
+}
+
+// verbosely prints a Record with missing A record data
+func (r *Record) printNoARecordVerbose(writer *tabwriter.Writer, technique string) {
+	if runtime.GOOS == "windows" {
+		fmt.Fprintln(writer, technique+"\t"+r.domain+"\t"+"A:-"+"\t")
+		writer.Flush()
+	} else {
+		fmt.Fprintln(writer, blue(technique)+"\t"+r.domain+"\t"+white("A:")+red("-")+"\t")
+		writer.Flush()
+	}
+}
+
+// prints geolocation data verbosely
+func (r *Record) printGeoRecordVerbose(writer *tabwriter.Writer, technique string) {
+	if runtime.GOOS == "windows" {
+		fmt.Fprintln(writer, technique+"\t"+r.domain+"\t"+"GEO:"+r.geolocation+"\t")
+		writer.Flush()
+	} else {
+		fmt.Fprintln(writer, blue(technique)+"\t"+r.domain+"\t"+white("GEO:")+yellow(r.geolocation)+"\t")
+		writer.Flush()
+	}
+}
+
+// verbosely prints a Record with missing geolocation data
+func (r *Record) printNoGeoRecordVerbose(writer *tabwriter.Writer, technique string) {
+	if runtime.GOOS == "windows" {
+		fmt.Fprintln(writer, technique+"\t"+r.domain+"\t"+"GEO:-"+"\t")
+		writer.Flush()
+	} else {
+		fmt.Fprintln(writer, blue(technique)+"\t"+r.domain+"\t"+white("GEO:")+red("-")+"\t")
+		writer.Flush()
+	}
+}
+
+// prints results data when Records are not returned
+func printResults(writer *tabwriter.Writer, technique, result, tld string) {
+	if runtime.GOOS == "windows" {
+		fmt.Fprintln(w, technique+"\t"+result+"."+tld+"\t")
+		w.Flush()
+	} else {
+		fmt.Fprintln(w, blue(technique)+"\t"+result+"."+tld+"\t")
+		w.Flush()
+	}
 }
 
 // sets up command-line arguments
@@ -88,44 +239,44 @@ func countChar(word string) map[rune]int {
 }
 
 // performs an A recors DNS lookup
-func aLookup(domain, tld string) []string {
-	ips:= []string{}
-	ip, err := net.ResolveIPAddr("ip4", domain+"."+tld)
+func aLookup(domain string) string {
+	ip, err := net.ResolveIPAddr("ip4", domain)
 	if err != nil {
-		ips = []string{""}
+		return ""
 
-	} else {
-		ips = append(ips, ip.String())
 	}
-	return ips  // todo: fix so that only one IP is returned
+	return ip.String() // todo: fix so that only onel IP is returned
 }
 
 // performs a geolocation lookup on input ip, returns country + city
-func geoLookup(input_ip string) (isoCode, city string) {
-	db, err := maxminddb.Open("data/GeoLite2-City.mmdb")
-	if err != nil {
-		log.Fatal(err)
+func geoLookup(input_ip string) string {
+	if input_ip != "" {
+		db, err := maxminddb.Open("data/GeoLite2-City.mmdb")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer db.Close()
+		ip := net.ParseIP(input_ip)
+		var record GeoIPRecord
+		err = db.Lookup(ip, &record)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return record.Country.IsoCode + " " + record.City.Names["en"]
 	}
-	defer db.Close()
-	ip := net.ParseIP(input_ip)
-	var record GeoIPRecord
-	err = db.Lookup(ip, &record)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return record.Country.IsoCode, record.City.Names["en"]
+	return ""
 }
 
 // performs an A record lookup
-func doLookups(domain, tld string, out chan<- record, resolve, geolocate bool) {
+func doLookups(domain, tld string, out chan<- Record, resolve, geolocate bool) {
 	defer wg.Done()
-	r := new(record)
-	r.domain = domain
+	r := new(Record)
+	r.domain = domain + "." + tld
 	if resolve {
-		r.a = aLookup(r.domain, tld)
+		r.a = aLookup(r.domain)
 	}
 	if geolocate {
-		r.geolocation = geoLookup(string(r.a[0]))
+		r.geolocation = geoLookup(r.a)
 	}
 	out <- *r
 }
@@ -158,10 +309,10 @@ func processInput(input string) (sanitizedDomain, tld string) {
 	}
 	return sanitizedDomain, tld
 }
-		
+
 // helper function to print permutation report and miscellaneous information
 func printReport(technique string, results []string, tld string) {
-	out := make(chan record)
+	out := make(chan Record)
 	w.Init(os.Stdout, 18, 8, 2, '\t', 0)
 	if *verbose == true && *resolve == true && *geolocate == true {
 		for _, i := range results {
@@ -169,40 +320,16 @@ func printReport(technique string, results []string, tld string) {
 			go doLookups(i, tld, out, *resolve, *geolocate)
 		}
 		go monitorWorker(wg, out)
-		for i := range out {
-			if i.a[0] != "" && i.geolocation != "" {
-				if runtime.GOOS == "windows" {
-					// switch A and GEO records
-					fmt.Fprintln(w, technique+"\t"+i.domain+"."+tld+"\t"+"A: "+strings.Join(i.a, ",")+"\t"+"GEO: "+i.geolocation+"\t")
-					w.Flush()
-				} else {
-					fmt.Fprintln(w, blue(technique)+"\t"+i.domain+"."+tld+"\t"+white("A: ")+yellow(strings.Join(i.a, ","))+"\t"+white("GEO: ")+yellow(i.geolocation)+"\t")
-					w.Flush()
-				}
-			} else if i.a[0] != "" && i.geolocation == "" {
-				if runtime.GOOS == "windows" {
-					fmt.Fprintln(w, technique+"\t"+i.domain+"."+tld+"\t"+"A: "+strings.Join(i.a, ",")+"\t"+"GEO: -"+"\t")
-					w.Flush()
-				} else {
-					fmt.Fprintln(w, blue(technique)+"\t"+i.domain+"."+tld+"\t"+white("A: ")+yellow(strings.Join(i.a, ","))+"\t"+white("GEO: ")+red("-")+"\t")
-					w.Flush()
-				}
-			} else if i.a[0] == "" && i.geolocation != "" {
-				if runtime.GOOS == "windows" {
-					fmt.Fprintln(w, technique+"\t"+i.domain+"."+tld+"\t"+"A: -"+"\t"+"GEO: "+i.geolocation+"\t")
-					w.Flush()
-				} else {
-					fmt.Fprintln(w, blue(technique)+"\t"+i.domain+"."+tld+"\t"+white("A:")+red("-")+"\t"+white("GEO: ")+red("-")+"\t")
-					w.Flush()
-				}
-			} else {
-				if runtime.GOOS == "windows" {
-					fmt.Fprintln(w, technique+"\t"+i.domain+"."+tld+"\t"+"A: -"+"\t"+"GEO: -"+"\t")
-					w.Flush()
-				} else {
-					fmt.Fprintln(w, blue(technique)+"\t"+i.domain+"."+tld+"\t"+white("A: ")+red("-")+"\t"+white("GEO: ")+red("-")+"\t")
-					w.Flush()
-				}
+		for r := range out {
+			switch {
+			case r.a != "" && r.geolocation != "":
+				r.printAll(w, technique, *verbose)
+			case r.a != "" && r.geolocation == "":
+				r.printANotGeo(w, technique, *verbose)
+			case r.a == "" && r.geolocation != "":
+				r.printGeoNotA(w, technique, *verbose)
+			default:
+				r.printEmptyRecord(w, technique, *verbose)
 			}
 		}
 	} else if *verbose == true && *resolve == true {
@@ -212,30 +339,54 @@ func printReport(technique string, results []string, tld string) {
 		}
 		go monitorWorker(wg, out)
 		for i := range out {
-			if i.a[0] != "" {
-				if runtime.GOOS == "windows" {
-					fmt.Fprintln(w, technique+"\t"+i.domain+"."+tld+"\t"+"A: "+strings.Join(i.a, ",")+"\t")
-					w.Flush()
-				} else {
-					fmt.Fprintln(w, blue(technique)+"\t"+i.domain+"."+tld+"\t"+white("A: ")+yellow(strings.Join(i.a, ","))+"\t")
-					w.Flush()
-				}
-			} else {
-				if runtime.GOOS == "windows" {
-					fmt.Fprintln(w, technique+"\t"+i.domain+"."+tld+"\t"+"-"+"\t")
-					w.Flush()
-				} else {
-					fmt.Fprintln(w, blue(technique)+"\t"+i.domain+"."+tld+"\t"+red("-")+"\t")
-					w.Flush()
-				}
+			switch {
+			case i.a != "":
+				i.printARecordVerbose(w, technique)
+			default:
+				i.printNoARecordVerbose(w, technique)
 			}
 		}
 	} else if *verbose == true && *geolocate == true {
-		// todo
+		for _, i := range results {
+			wg.Add(1)
+			go doLookups(i, tld, out, true, *geolocate)
+		}
+		go monitorWorker(wg, out)
+		for i := range out {
+			switch {
+			case i.geolocation != "":
+				i.printGeoRecordVerbose(w, technique)
+			default:
+				i.printNoGeoRecordVerbose(w, technique)
+			}
+		}
 	} else if *resolve == true && *geolocate == true {
-        // todo
-	}else if *geolocate == true {
-		// todo
+		for _, i := range results {
+			wg.Add(1)
+			go doLookups(i, tld, out, *resolve, *geolocate)
+		}
+		go monitorWorker(wg, out)
+		for r := range out {
+			switch {
+			case r.a != "" && r.geolocation != "":
+				r.printAll(w, "", *verbose)
+			case r.a != "" && r.geolocation == "":
+				r.printANotGeo(w, "", *verbose)
+			case r.a == "" && r.geolocation != "":
+				r.printGeoNotA(w, "", *verbose)
+			default:
+				r.printEmptyRecord(w, "", *verbose) 
+			}
+		}
+	} else if *geolocate == true {
+		for _, i := range results {
+			wg.Add(1)
+			go doLookups(i, tld, out, true, *geolocate)
+		}
+		go monitorWorker(wg, out)
+		for i := range out {
+			i.printGeoRecord(w)
+		}
 	} else if *verbose == false && *resolve == false {
 		for _, result := range results {
 			fmt.Println(result + "." + tld)
@@ -247,24 +398,17 @@ func printReport(technique string, results []string, tld string) {
 		}
 		go monitorWorker(wg, out)
 		for i := range out {
-			fmt.Fprintln(w, i.domain+"."+tld+"\t"+i.a[0]+"\t")
-			w.Flush()
+			i.printARecord(w)
 		}
 	} else if *verbose == true {
 		for _, result := range results {
-			if runtime.GOOS == "windows" {
-				fmt.Fprintln(w, technique+"\t"+result+"."+tld+"\t")
-				w.Flush()
-			} else {
-				fmt.Fprintln(w, blue(technique)+"\t"+result+"."+tld+"\t")
-				w.Flush()
-			}
+			printResults(w, technique, result, tld)
 		}
 	}
 }
 
 // helper function to wait for goroutines collection to finish and close channel
-func monitorWorker(wg *sync.WaitGroup, channel chan record) {
+func monitorWorker(wg *sync.WaitGroup, channel chan Record) {
 	wg.Wait()
 	close(channel)
 }
