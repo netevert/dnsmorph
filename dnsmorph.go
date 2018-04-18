@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/csv"
 	"flag"
 	"fmt"
 	"github.com/fatih/color"
@@ -35,7 +36,8 @@ var (
 	verbose           = flag.Bool("v", false, "enable verbosity")
 	includeSubdomains = flag.Bool("i", false, "include subdomain")
 	resolve           = flag.Bool("r", false, "resolve domain")
-	utilDescription   = "dnsmorph -d domain [-g] [-i] [-r] [-v]"
+	outcsv           = flag.Bool("csv", false, "output to csv")
+	utilDescription   = "dnsmorph -d domain [-csv] [-g] [-i] [-r] [-v]"
 	banner            = `
 ╔╦╗╔╗╔╔═╗╔╦╗╔═╗╦═╗╔═╗╦ ╦
  ║║║║║╚═╗║║║║ ║╠╦╝╠═╝╠═╣
@@ -55,6 +57,11 @@ type Record struct {
 	domain      string
 	a           string
 	geolocation string
+}
+
+type Target struct {
+	TargetDomain        string
+	Function          func(string) []string
 }
 
 // prints all Record data
@@ -413,18 +420,70 @@ func monitorWorker(wg *sync.WaitGroup, channel chan Record) {
 	close(channel)
 }
 
+// outputs results data to a csv file
+func outputCsv(target, tld string) {
+	// create results list
+	out := make(chan Record)
+	results := []string{}
+	for _, t := range []Target{
+		{target, transpositionAttack},
+		{target, additionAttack},
+		{target, vowelswapAttack},
+		{target, subdomainAttack},
+		{target, replacementAttack},
+		{target, repetitionAttack},
+		{target, omissionAttack},
+		{target, hyphenationAttack},
+		{target, bitsquattingAttack},
+		{target, homographAttack},} {
+		for _, r := range t.Function(t.TargetDomain){
+			results = append(results, r)
+		}
+	}
+	if *verbose != false {
+		fmt.Println("found", len(results), "permutations...")
+		if *resolve != false {fmt.Println("looking up a records")}
+		if *geolocate != false {fmt.Println("looking up geolocation")}
+	}
+	for _, i := range results {
+		wg.Add(1)
+		go doLookups(i, tld, out, *resolve, *geolocate)
+	}
+	go monitorWorker(wg, out)
+
+	file, err := os.Create("result.csv")
+	if err != nil {
+        log.Fatal(err)
+	}
+	defer file.Close()
+    writer := csv.NewWriter(file)
+	defer writer.Flush()
+	for i := range out {
+		var data = []string{i.domain, i.a, i.geolocation}
+		err := writer.Write(data)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	fmt.Println("output to csv done")
+}
+
 // helper function to specify permutation attacks to be performed
 func runPermutations(target, tld string) {
-	printReport("addition", additionAttack(target), tld)
-	printReport("omission", omissionAttack(target), tld)
-	printReport("homograph", homographAttack(target), tld)
-	printReport("subdomain", subdomainAttack(target), tld)
-	printReport("vowel swap", vowelswapAttack(target), tld)
-	printReport("repetition", repetitionAttack(target), tld)
-	printReport("hyphenation", hyphenationAttack(target), tld)
-	printReport("replacement", replacementAttack(target), tld)
-	printReport("bitsquatting", bitsquattingAttack(target), tld)
-	printReport("transposition", transpositionAttack(target), tld)
+	if *outcsv != false {
+		outputCsv(target, tld)
+	} else {
+		printReport("addition", additionAttack(target), tld)
+		printReport("omission", omissionAttack(target), tld)
+		printReport("homograph", homographAttack(target), tld)
+		printReport("subdomain", subdomainAttack(target), tld)
+		printReport("vowel swap", vowelswapAttack(target), tld)
+		printReport("repetition", repetitionAttack(target), tld)
+		printReport("hyphenation", hyphenationAttack(target), tld)
+		printReport("replacement", replacementAttack(target), tld)
+		printReport("bitsquatting", bitsquattingAttack(target), tld)
+		printReport("transposition", transpositionAttack(target), tld)
+	}
 }
 
 // performs an addition attack adding a single character to the domain

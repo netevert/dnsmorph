@@ -44,7 +44,9 @@ Usage
 <details><summary>Usage menu output</summary>
 <p>
 
-    dnsmorph -d domain [-g] [-i] [-r] [-v]
+    dnsmorph -d domain [-csv] [-g] [-i] [-r] [-v]
+      -csv
+            output to csv
       -d string
             target domain
       -g    geolocate domain
@@ -75,6 +77,12 @@ Usage
 <p>
 
     ./dnsmorph -d amazon.com -g
+</p>
+</details>
+<details><summary>Save results to csv</summary>
+<p>
+
+    ./dnsmorph -d amazon.com -r -g -csv
 </p>
 </details>
 <details><summary>Activate verbose output</summary>
