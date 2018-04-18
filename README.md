@@ -44,10 +44,11 @@ Usage
 <details><summary>Usage menu output</summary>
 <p>
 
-    dnsmorph -d domain [-i] [-v] [-r]
+    dnsmorph -d domain [-g] [-i] [-r] [-v]
       -d string
             target domain
-      -i    include subdomains
+      -g    geolocate domain
+      -i    include subdomain
       -r    resolve domain
       -v    enable verbosity
 </p>
@@ -70,10 +71,16 @@ Usage
     ./dnsmorph -d amazon.com -r
 </p>
 </details>
-<details><summary>View types of attack performed (verbose output)</summary>
+<details><summary>Run geolocation against permutated domains</summary>
 <p>
 
-    ./dnsmorph -d staging.amazon.com -i -v
+    ./dnsmorph -d amazon.com -g
+</p>
+</details>
+<details><summary>Activate verbose output</summary>
+<p>
+
+    ./dnsmorph -d staging.amazon.com -v
 </p>
 </details>
 <p></p>
