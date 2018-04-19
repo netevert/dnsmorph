@@ -83,7 +83,6 @@ Usage
 <p>
 
     ./dnsmorph -d amazon.com -r -g -csv
-
     ./dnsmorph -d amazon.com -r -g -json
 </p>
 </details>

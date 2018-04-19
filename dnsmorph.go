@@ -68,8 +68,12 @@ type Target struct {
 	Function     func(string) []string
 }
 
+type OutJson struct {
+	Results []Record `json:"results"`
+}
+
 // prints all Record data
-func (r *Record) printAll(writer *tabwriter.Writer, Technique string, verbose bool) {
+func (r *Record) printAll(writer *tabwriter.Writer, verbose bool) {
 	if runtime.GOOS == "windows" {
 		if verbose != false {
 			fmt.Fprintln(writer, r.Technique+"\t"+r.Domain+"\t"+"A:"+r.A+"\t"+"GEO:"+r.Geolocation+"\t")
@@ -90,10 +94,10 @@ func (r *Record) printAll(writer *tabwriter.Writer, Technique string, verbose bo
 }
 
 // print method for Record structs that have a data but not Geolocation data
-func (r *Record) printANotGeo(writer *tabwriter.Writer, Technique string, verbose bool) {
+func (r *Record) printANotGeo(writer *tabwriter.Writer, verbose bool) {
 	if runtime.GOOS == "windows" {
 		if verbose != false {
-			fmt.Fprintln(writer, Technique+"\t"+r.Domain+"\t"+"A:"+r.A+"\t"+"GEO:-"+"\t")
+			fmt.Fprintln(writer, r.Technique+"\t"+r.Domain+"\t"+"A:"+r.A+"\t"+"GEO:-"+"\t")
 			writer.Flush()
 		} else {
 			fmt.Fprintln(writer, r.Domain+"\t"+r.A+"\t"+""+"\t")
@@ -111,10 +115,10 @@ func (r *Record) printANotGeo(writer *tabwriter.Writer, Technique string, verbos
 }
 
 // print method for Record structs that have Geolocation data but not a data
-func (r *Record) printGeoNotA(writer *tabwriter.Writer, Technique string, verbose bool) {
+func (r *Record) printGeoNotA(writer *tabwriter.Writer, verbose bool) {
 	if runtime.GOOS == "windows" {
 		if verbose != true {
-			fmt.Fprintln(writer, Technique+"\t"+r.Domain+"\t"+"A:-"+"\t"+"GEO:"+r.Geolocation+"\t")
+			fmt.Fprintln(writer, r.Technique+"\t"+r.Domain+"\t"+"A:-"+"\t"+"GEO:"+r.Geolocation+"\t")
 			writer.Flush()
 		} else {
 			fmt.Fprintln(writer, r.Domain+"\t"+""+"\t"+r.Geolocation+"\t")
@@ -132,10 +136,10 @@ func (r *Record) printGeoNotA(writer *tabwriter.Writer, Technique string, verbos
 }
 
 // print method for empty Record structs
-func (r *Record) printEmptyRecord(writer *tabwriter.Writer, Technique string, verbose bool) {
+func (r *Record) printEmptyRecord(writer *tabwriter.Writer, verbose bool) {
 	if runtime.GOOS == "windows" {
 		if verbose != false {
-			fmt.Fprintln(writer, Technique+"\t"+r.Domain+"\t"+"A:-"+"\t"+"GEO:-"+"\t")
+			fmt.Fprintln(writer, r.Technique+"\t"+r.Domain+"\t"+"A:-"+"\t"+"GEO:-"+"\t")
 			writer.Flush()
 		} else {
 			fmt.Fprintln(writer, r.Domain+"\t"+""+"\t"+""+"\t")
@@ -165,9 +169,9 @@ func (r *Record) printGeoRecord(writer *tabwriter.Writer) {
 }
 
 // prints a record data verbosely
-func (r *Record) printARecordVerbose(writer *tabwriter.Writer, Technique string) {
+func (r *Record) printARecordVerbose(writer *tabwriter.Writer) {
 	if runtime.GOOS == "windows" {
-		fmt.Fprintln(writer, Technique+"\t"+r.Domain+"\t"+"A:"+r.A+"\t")
+		fmt.Fprintln(writer, r.Technique+"\t"+r.Domain+"\t"+"A:"+r.A+"\t")
 		writer.Flush()
 	} else {
 		fmt.Fprintln(writer, blue(r.Technique)+"\t"+r.Domain+"\t"+white("A:")+yellow(r.A)+"\t")
@@ -176,9 +180,9 @@ func (r *Record) printARecordVerbose(writer *tabwriter.Writer, Technique string)
 }
 
 // verbosely prints a Record with missing a record data
-func (r *Record) printNoARecordVerbose(writer *tabwriter.Writer, Technique string) {
+func (r *Record) printNoARecordVerbose(writer *tabwriter.Writer) {
 	if runtime.GOOS == "windows" {
-		fmt.Fprintln(writer, Technique+"\t"+r.Domain+"\t"+"A:-"+"\t")
+		fmt.Fprintln(writer, r.Technique+"\t"+r.Domain+"\t"+"A:-"+"\t")
 		writer.Flush()
 	} else {
 		fmt.Fprintln(writer, blue(r.Technique)+"\t"+r.Domain+"\t"+white("A:")+red("-")+"\t")
@@ -187,9 +191,9 @@ func (r *Record) printNoARecordVerbose(writer *tabwriter.Writer, Technique strin
 }
 
 // prints Geolocation data verbosely
-func (r *Record) printGeoRecordVerbose(writer *tabwriter.Writer, Technique string) {
+func (r *Record) printGeoRecordVerbose(writer *tabwriter.Writer) {
 	if runtime.GOOS == "windows" {
-		fmt.Fprintln(writer, Technique+"\t"+r.Domain+"\t"+"GEO:"+r.Geolocation+"\t")
+		fmt.Fprintln(writer, r.Technique+"\t"+r.Domain+"\t"+"GEO:"+r.Geolocation+"\t")
 		writer.Flush()
 	} else {
 		fmt.Fprintln(writer, blue(r.Technique)+"\t"+r.Domain+"\t"+white("GEO:")+yellow(r.Geolocation)+"\t")
@@ -198,9 +202,9 @@ func (r *Record) printGeoRecordVerbose(writer *tabwriter.Writer, Technique strin
 }
 
 // verbosely prints a Record with missing Geolocation data
-func (r *Record) printNoGeoRecordVerbose(writer *tabwriter.Writer, Technique string) {
+func (r *Record) printNoGeoRecordVerbose(writer *tabwriter.Writer) {
 	if runtime.GOOS == "windows" {
-		fmt.Fprintln(writer, Technique+"\t"+r.Domain+"\t"+"GEO:-"+"\t")
+		fmt.Fprintln(writer, r.Technique+"\t"+r.Domain+"\t"+"GEO:-"+"\t")
 		writer.Flush()
 	} else {
 		fmt.Fprintln(writer, blue(r.Technique)+"\t"+r.Domain+"\t"+white("GEO:")+red("-")+"\t")
@@ -209,12 +213,12 @@ func (r *Record) printNoGeoRecordVerbose(writer *tabwriter.Writer, Technique str
 }
 
 // prints results data when Records are not returned
-func printResults(writer *tabwriter.Writer, Technique, result, tld string) {
+func printResults(writer *tabwriter.Writer, technique, result, tld string) {
 	if runtime.GOOS == "windows" {
-		fmt.Fprintln(w, Technique+"\t"+result+"."+tld+"\t")
+		fmt.Fprintln(w, technique+"\t"+result+"."+tld+"\t")
 		w.Flush()
 	} else {
-		fmt.Fprintln(w, blue(Technique)+"\t"+result+"."+tld+"\t")
+		fmt.Fprintln(w, blue(technique)+"\t"+result+"."+tld+"\t")
 		w.Flush()
 	}
 }
@@ -323,77 +327,77 @@ func processInput(input string) (sanitizedDomain, tld string) {
 }
 
 // helper function to print permutation report and miscellaneous information
-func printReport(Technique string, results []string, tld string) {
+func printReport(technique string, results []string, tld string) {
 	out := make(chan Record)
 	w.Init(os.Stdout, 18, 8, 2, '\t', 0)
 	if *verbose == true && *resolve == true && *geolocate == true {
 		for _, r := range results {
 			wg.Add(1)
-			go doLookups(Technique, r, tld, out, *resolve, *geolocate)
+			go doLookups(technique, r, tld, out, *resolve, *geolocate)
 		}
 		go monitorWorker(wg, out)
 		for r := range out {
 			switch {
 			case r.A != "" && r.Geolocation != "":
-				r.printAll(w, Technique, *verbose)
+				r.printAll(w, *verbose)
 			case r.A != "" && r.Geolocation == "":
-				r.printANotGeo(w, Technique, *verbose)
+				r.printANotGeo(w, *verbose)
 			case r.A == "" && r.Geolocation != "":
-				r.printGeoNotA(w, Technique, *verbose)
+				r.printGeoNotA(w, *verbose)
 			default:
-				r.printEmptyRecord(w, Technique, *verbose)
+				r.printEmptyRecord(w, *verbose)
 			}
 		}
 	} else if *verbose == true && *resolve == true {
 		for _, r := range results {
 			wg.Add(1)
-			go doLookups(Technique, r, tld, out, *resolve, *geolocate)
+			go doLookups(technique, r, tld, out, *resolve, *geolocate)
 		}
 		go monitorWorker(wg, out)
 		for i := range out {
 			switch {
 			case i.A != "":
-				i.printARecordVerbose(w, Technique)
+				i.printARecordVerbose(w)
 			default:
-				i.printNoARecordVerbose(w, Technique)
+				i.printNoARecordVerbose(w)
 			}
 		}
 	} else if *verbose == true && *geolocate == true {
 		for _, r := range results {
 			wg.Add(1)
-			go doLookups(Technique, r, tld, out, true, *geolocate)
+			go doLookups(technique, r, tld, out, true, *geolocate)
 		}
 		go monitorWorker(wg, out)
 		for i := range out {
 			switch {
 			case i.Geolocation != "":
-				i.printGeoRecordVerbose(w, Technique)
+				i.printGeoRecordVerbose(w)
 			default:
-				i.printNoGeoRecordVerbose(w, Technique)
+				i.printNoGeoRecordVerbose(w)
 			}
 		}
 	} else if *resolve == true && *geolocate == true {
 		for _, r := range results {
 			wg.Add(1)
-			go doLookups(Technique, r, tld, out, *resolve, *geolocate)
+			go doLookups(technique, r, tld, out, *resolve, *geolocate)
 		}
 		go monitorWorker(wg, out)
 		for r := range out {
 			switch {
 			case r.A != "" && r.Geolocation != "":
-				r.printAll(w, "", *verbose)
+				r.printAll(w, *verbose)
 			case r.A != "" && r.Geolocation == "":
-				r.printANotGeo(w, "", *verbose)
+				r.printANotGeo(w, *verbose)
 			case r.A == "" && r.Geolocation != "":
-				r.printGeoNotA(w, "", *verbose)
+				r.printGeoNotA(w, *verbose)
 			default:
-				r.printEmptyRecord(w, "", *verbose)
+				r.printEmptyRecord(w, *verbose)
 			}
 		}
 	} else if *geolocate == true {
 		for _, r := range results {
 			wg.Add(1)
-			go doLookups(Technique, r, tld, out, true, *geolocate)
+			go doLookups(technique, r, tld, out, true, *geolocate)
 		}
 		go monitorWorker(wg, out)
 		for i := range out {
@@ -406,7 +410,7 @@ func printReport(Technique string, results []string, tld string) {
 	} else if *resolve == true {
 		for _, r := range results {
 			wg.Add(1)
-			go doLookups(Technique, r, tld, out, *resolve, *geolocate)
+			go doLookups(technique, r, tld, out, *resolve, *geolocate)
 		}
 		go monitorWorker(wg, out)
 		for i := range out {
@@ -414,7 +418,7 @@ func printReport(Technique string, results []string, tld string) {
 		}
 	} else if *verbose == true {
 		for _, result := range results {
-			printResults(w, Technique, result, tld)
+			printResults(w, technique, result, tld)
 		}
 	}
 }
@@ -445,21 +449,21 @@ func outputToFile(target, tld string) {
 			results = append(results, []string{r, t.Technique})
 		}
 	}
-	if *verbose != false {
-		fmt.Println("found", len(results), "permutations...")
-		if *resolve != false {
-			fmt.Println("looking up A records")
-		}
-		if *geolocate != false {
-			fmt.Println("looking up Geolocation")
-		}
-	}
 	for _, r := range results {
 		wg.Add(1)
 		go doLookups(r[1], r[0], tld, out, *resolve, *geolocate)
 	}
 	go monitorWorker(wg, out)
 	if *outcsv != false {
+		if *verbose != false {
+			fmt.Println("found", len(results), "permutations...")
+			if *resolve != false {
+				fmt.Println("looking up A records")
+			}
+			if *geolocate != false {
+				fmt.Println("looking up geolocation")
+			}
+		}
 		file, err := os.Create("result.csv")
 		if err != nil {
 			log.Fatal(err)
@@ -487,10 +491,6 @@ func outputToFile(target, tld string) {
 		}
 		fmt.Printf("%s\n", data)
 	}
-}
-
-type OutJson struct {
-	Results []Record `json:"results"`
 }
 
 // helper function to specify permutation attacks to be performed
