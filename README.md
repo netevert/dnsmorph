@@ -35,8 +35,9 @@ There are two ways to install dnsmorph on your system:
 
 2. Downloading and compiling the source code yourself by running the following commands:
 
-    - ```go get github.com/netevert/dnsmorph```
+    - ```go get -v github.com/netevert/dnsmorph```
     - `cd /$GOPATH/src/github.com/netevert/dnsmorph`
+    - `go get -v ./...`
     - `go build`
 
 Usage
@@ -44,7 +45,7 @@ Usage
 <details><summary>Usage menu output</summary>
 <p>
 
-    dnsmorph [-d domain | -l domains_file] [-girv] [-csv | -json]
+    dnsmorph -d domain | -l domains_file [-girv] [-csv | -json]
       -csv
             output to csv
       -d string
