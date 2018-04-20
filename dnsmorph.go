@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/csv"
 	"encoding/json"
 	"flag"
@@ -34,12 +35,13 @@ var (
 	wg                = &sync.WaitGroup{}
 	domain            = flag.String("d", "", "target domain")
 	geolocate         = flag.Bool("g", false, "geolocate domain")
+	list              = flag.String("l", "", "domain list filepath")
 	verbose           = flag.Bool("v", false, "enable verbosity")
 	includeSubDomains = flag.Bool("i", false, "include subdomain")
 	resolve           = flag.Bool("r", false, "resolve domain")
 	outcsv            = flag.Bool("csv", false, "output to csv")
 	outjson           = flag.Bool("json", false, "output to json")
-	utilDescription   = "dnsmorph -d Domain [-csv|json] [-g] [-i] [-r] [-v]"
+	utilDescription   = "dnsmorph -d domain | -l domains_file [-girv] [-csv | -json]"
 	banner            = `
 ╔╦╗╔╗╔╔═╗╔╦╗╔═╗╦═╗╔═╗╦ ╦
  ║║║║║╚═╗║║║║ ║╠╦╝╠═╝╠═╣
@@ -236,8 +238,22 @@ func setup() {
 
 	flag.Parse()
 
-	if *domain == "" {
-		r.Printf("\nplease supply a domain\n\n")
+	if *domain == "" && *list == "" {
+		r.Printf("\nplease supply domains\n\n")
+		fmt.Println(utilDescription)
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+
+	if *list != "" && *domain != "" {
+		r.Printf("\nplease supply either option -d or -l\n\n")
+		fmt.Println(utilDescription)
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+
+	if *outjson != false && *outcsv != false {
+		r.Printf("\nplease supply either csv or json ouput\n\n")
 		fmt.Println(utilDescription)
 		flag.PrintDefaults()
 		os.Exit(1)
@@ -423,6 +439,27 @@ func printReport(technique string, results []string, tld string) {
 	}
 }
 
+// helper function to print output information during csv generation
+func printOutputInfo(results [][]string) {
+	y.Printf("%s ", "[*]")
+	fmt.Printf("%s", "found ")
+	r.Printf("%v", len(results))
+	fmt.Printf("%s\n", " permutations")
+	lookups := []string{}
+	y.Printf("%s ", "[*]")
+	fmt.Printf("%s", "lookups selected: ")
+	if *resolve != false {
+		lookups = append(lookups, "a record")
+	}
+	if *geolocate != false {
+		lookups = append(lookups, "geolocation")
+	}
+	for _, lookup := range lookups {
+		y.Printf("[%s] ", lookup)
+	}
+	fmt.Printf("\n")
+}
+
 // helper function to wait for goroutines collection to finish and close channel
 func monitorWorker(wg *sync.WaitGroup, channel chan Record) {
 	wg.Wait()
@@ -430,39 +467,38 @@ func monitorWorker(wg *sync.WaitGroup, channel chan Record) {
 }
 
 // outputs results data to a csv file
-func outputToFile(target, tld string) {
+func outputToFile(targets []string) {
 	// create results list
 	out := make(chan Record)
 	results := [][]string{}
-	for _, t := range []Target{
-		{"transposition", target, transpositionAttack},
-		{"addition", target, additionAttack},
-		{"vowelswap", target, vowelswapAttack},
-		{"subdomain", target, subdomainAttack},
-		{"replacement", target, replacementAttack},
-		{"repetition", target, repetitionAttack},
-		{"omission", target, omissionAttack},
-		{"hyphenation", target, hyphenationAttack},
-		{"bitsquatting", target, bitsquattingAttack},
-		{"homograph", target, homographAttack}} {
-		for _, r := range t.Function(t.TargetDomain) {
-			results = append(results, []string{r, t.Technique})
+	for _, target := range targets {
+		sanitizedDomain, tld := processInput(target)
+		for _, t := range []Target{
+			{"transposition", sanitizedDomain, transpositionAttack},
+			{"addition", sanitizedDomain, additionAttack},
+			{"vowelswap", sanitizedDomain, vowelswapAttack},
+			{"subdomain", sanitizedDomain, subdomainAttack},
+			{"replacement", sanitizedDomain, replacementAttack},
+			{"repetition", sanitizedDomain, repetitionAttack},
+			{"omission", sanitizedDomain, omissionAttack},
+			{"hyphenation", sanitizedDomain, hyphenationAttack},
+			{"bitsquatting", sanitizedDomain, bitsquattingAttack},
+			{"homograph", sanitizedDomain, homographAttack}} {
+			for _, r := range t.Function(t.TargetDomain) {
+				results = append(results, []string{r + "." + tld, t.Technique})
+			}
 		}
 	}
 	for _, r := range results {
 		wg.Add(1)
-		go doLookups(r[1], r[0], tld, out, *resolve, *geolocate)
+		s := strings.Split(r[0], ".")
+		domain, tld := s[0], s[1]
+		go doLookups(r[1], domain, tld, out, *resolve, *geolocate)
 	}
 	go monitorWorker(wg, out)
 	if *outcsv != false {
 		if *verbose != false {
-			fmt.Println("found", len(results), "permutations...")
-			if *resolve != false {
-				fmt.Println("looking up A records")
-			}
-			if *geolocate != false {
-				fmt.Println("looking up geolocation")
-			}
+			printOutputInfo(results)
 		}
 		file, err := os.Create("result.csv")
 		if err != nil {
@@ -478,7 +514,12 @@ func outputToFile(target, tld string) {
 				log.Fatal(err)
 			}
 		}
-		fmt.Println("output to csv done")
+		if *verbose != false {
+			y.Printf("%s ", "[*]")
+			g.Printf("done")
+		} else {
+			g.Printf("done")
+		}
 	}
 	if *outjson != false {
 		var output OutJson
@@ -494,20 +535,23 @@ func outputToFile(target, tld string) {
 }
 
 // helper function to specify permutation attacks to be performed
-func runPermutations(target, tld string) {
+func runPermutations(targets []string) {
 	if *outcsv != false || *outjson != false {
-		outputToFile(target, tld)
+		outputToFile(targets)
 	} else {
-		printReport("addition", additionAttack(target), tld)
-		printReport("omission", omissionAttack(target), tld)
-		printReport("homograph", homographAttack(target), tld)
-		printReport("subdomain", subdomainAttack(target), tld)
-		printReport("vowel swap", vowelswapAttack(target), tld)
-		printReport("repetition", repetitionAttack(target), tld)
-		printReport("hyphenation", hyphenationAttack(target), tld)
-		printReport("replacement", replacementAttack(target), tld)
-		printReport("bitsquatting", bitsquattingAttack(target), tld)
-		printReport("transposition", transpositionAttack(target), tld)
+		for _, target := range targets {
+			sanitizedDomain, tld := processInput(target)
+			printReport("addition", additionAttack(sanitizedDomain), tld)
+			printReport("omission", omissionAttack(sanitizedDomain), tld)
+			printReport("homograph", homographAttack(sanitizedDomain), tld)
+			printReport("subdomain", subdomainAttack(sanitizedDomain), tld)
+			printReport("vowel swap", vowelswapAttack(sanitizedDomain), tld)
+			printReport("repetition", repetitionAttack(sanitizedDomain), tld)
+			printReport("hyphenation", hyphenationAttack(sanitizedDomain), tld)
+			printReport("replacement", replacementAttack(sanitizedDomain), tld)
+			printReport("bitsquatting", bitsquattingAttack(sanitizedDomain), tld)
+			printReport("transposition", transpositionAttack(sanitizedDomain), tld)
+		}
 	}
 }
 
@@ -718,6 +762,26 @@ func homographAttack(domain string) []string {
 // main program entry point
 func main() {
 	setup()
-	sanitizedDomain, tld := processInput(*domain)
-	runPermutations(sanitizedDomain, tld)
+
+	if *domain != "" && *list == "" {
+		sanitizedDomain, tld := processInput(*domain)
+		targets := []string{sanitizedDomain + "." + tld}
+		runPermutations(targets)
+	}
+
+	if *list != "" && *domain == "" {
+		targets := []string{}
+		file, err := os.Open(*list)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			sanitizedDomain, tld := processInput(scanner.Text())
+			targets = append(targets, sanitizedDomain+"."+tld)
+		}
+		runPermutations(targets)
+	}
 }

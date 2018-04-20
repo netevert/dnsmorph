@@ -44,13 +44,17 @@ Usage
 <details><summary>Usage menu output</summary>
 <p>
 
-    dnsmorph -d domain [-csv|json] [-g] [-i] [-r] [-v]
+    dnsmorph [-d domain | -l domains_file] [-girv] [-csv | -json]
       -csv
             output to csv
       -d string
             target domain
       -g    geolocate domain
       -i    include subdomain
+      -json
+            output to json
+      -l string
+            domain list filepath
       -r    resolve domain
       -v    enable verbosity
 </p>
@@ -59,6 +63,12 @@ Usage
 <p>
 
     ./dnsmorph -d amazon.com
+</p>
+</details>
+<details><summary>Run attacks against a list of domains</summary>
+<p>
+
+    ./dnsmorph -l domains.txt
 </p>
 </details>
 <details><summary>Include subdomain in attack</summary>

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Domain geolocation
 - Output to csv
 - Output to json
+- Option to submit a domains list file for bulk lookups
 
 ### Fixed
 - Output formatting
