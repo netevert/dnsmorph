@@ -89,7 +89,7 @@ Usage
     ./dnsmorph -d amazon.com -g
 </p>
 </details>
-<details><summary>Save results to csv or json</summary>
+<details><summary>Output results to csv or json</summary>
 <p>
 
     ./dnsmorph -d amazon.com -r -g -csv
