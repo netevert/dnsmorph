@@ -35,8 +35,9 @@ There are two ways to install dnsmorph on your system:
 
 2. Downloading and compiling the source code yourself by running the following commands:
 
-    - ```go get github.com/netevert/dnsmorph```
+    - ```go get -v github.com/netevert/dnsmorph```
     - `cd /$GOPATH/src/github.com/netevert/dnsmorph`
+    - `go get -v ./...`
     - `go build`
 
 Usage
@@ -44,10 +45,17 @@ Usage
 <details><summary>Usage menu output</summary>
 <p>
 
-    dnsmorph -d domain [-i] [-v] [-r]
+    dnsmorph -d domain | -l domains_file [-girv] [-csv | -json]
+      -csv
+            output to csv
       -d string
             target domain
-      -i    include subdomains
+      -g    geolocate domain
+      -i    include subdomain
+      -json
+            output to json
+      -l string
+            domain list filepath
       -r    resolve domain
       -v    enable verbosity
 </p>
@@ -56,6 +64,12 @@ Usage
 <p>
 
     ./dnsmorph -d amazon.com
+</p>
+</details>
+<details><summary>Run attacks against a list of domains</summary>
+<p>
+
+    ./dnsmorph -l domains.txt
 </p>
 </details>
 <details><summary>Include subdomain in attack</summary>
@@ -70,10 +84,23 @@ Usage
     ./dnsmorph -d amazon.com -r
 </p>
 </details>
-<details><summary>View types of attack performed (verbose output)</summary>
+<details><summary>Run geolocation against permutated domains</summary>
 <p>
 
-    ./dnsmorph -d staging.amazon.com -i -v
+    ./dnsmorph -d amazon.com -g
+</p>
+</details>
+<details><summary>Output results to csv or json</summary>
+<p>
+
+    ./dnsmorph -d amazon.com -r -g -csv
+    ./dnsmorph -d amazon.com -r -g -json
+</p>
+</details>
+<details><summary>Activate verbose output</summary>
+<p>
+
+    ./dnsmorph -d staging.amazon.com -v
 </p>
 </details>
 <p></p>
