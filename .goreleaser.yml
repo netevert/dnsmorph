@@ -23,4 +23,4 @@ archive:
     - goos: windows
       format: zip
   files:
-    - data/*
+    - data/GeoLite2-City.zip
