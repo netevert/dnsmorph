@@ -1,8 +1,6 @@
 package main
 
 import (
-	"io"
-	"path/filepath"
 	"archive/zip"
 	"bufio"
 	"encoding/csv"
@@ -11,10 +9,13 @@ import (
 	"fmt"
 	"github.com/fatih/color"
 	"github.com/oschwald/maxminddb-golang"
+	"github.com/tcnksm/go-latest"
 	"golang.org/x/net/publicsuffix"
+	"io"
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
@@ -24,9 +25,13 @@ import (
 )
 
 // program version
-const version = "1.2.3"
+const version = "1.2.4"
 
 var (
+	githubTag = &latest.GithubTag{
+		Owner:             "netevert",
+		Repository:        "dnsmorph",
+		FixVersionStrFunc: latest.DeleteFrontV()}
 	g                 = color.New(color.FgHiGreen)
 	y                 = color.New(color.FgHiYellow)
 	r                 = color.New(color.FgHiRed)
@@ -36,6 +41,7 @@ var (
 	red               = color.New(color.FgHiRed).SprintFunc()
 	w                 = new(tabwriter.Writer)
 	wg                = &sync.WaitGroup{}
+	check             = flag.Bool("u", false, "update check")
 	domain            = flag.String("d", "", "target domain")
 	geolocate         = flag.Bool("g", false, "geolocate domain")
 	list              = flag.String("l", "", "domain list filepath")
@@ -48,7 +54,7 @@ var (
 	banner            = `
 ╔╦╗╔╗╔╔═╗╔╦╗╔═╗╦═╗╔═╗╦ ╦
  ║║║║║╚═╗║║║║ ║╠╦╝╠═╝╠═╣
-═╩╝╝╚╝╚═╝╩ ╩╚═╝╩╚═╩  ╩ ╩` // Calvin S on http://patorjk.com/
+═╩╝╝╚╝╚═╝╩ ╩╚═╝╩╚═╩  ╩ ╩`  // Calvin S on http://patorjk.com/
 )
 
 type GeoIPRecord struct {
@@ -98,6 +104,19 @@ func (r *Record) printRecordData(writer *tabwriter.Writer, verbose bool) {
 	}
 }
 
+// checks if new version of dnsmorph is available
+func checkVersion() {
+	y.Printf("DNSMORPH")
+	fmt.Printf(" v.%s\n", version)
+	res, _ := latest.Check(githubTag, version)
+	if res.Outdated {
+		r.Printf("v.%s available\n", res.Current)
+	} else {
+		g.Printf("you have the latest version\n")
+	}
+	os.Exit(1)
+}
+
 // sets up command-line arguments
 func setup() {
 
@@ -110,6 +129,10 @@ func setup() {
 	}
 
 	flag.Parse()
+
+	if *check {
+		checkVersion()
+	}
 
 	if *domain == "" && *list == "" {
 		r.Printf("\nplease supply domains\n\n")
@@ -142,17 +165,17 @@ func countChar(word string) map[rune]int {
 	return count
 }
 
-// performs an a recors DNS lookup
+// performs an A record DNS lookup
 func aLookup(Domain string) string {
 	ip, err := net.ResolveIPAddr("ip4", Domain)
 	if err != nil {
 		return ""
 
 	}
-	return ip.String() // todo: fix so that only onel IP is returned
+	return ip.String() // todo: fix to return only one IP
 }
 
-// performs a Geolocation lookup on input ip, returns country + city
+// performs a geolocation lookup on input IP, returns country + city
 func geoLookup(input_ip string) string {
 	if input_ip != "" {
 		db, err := maxminddb.Open("data/GeoLite2-City.mmdb")
@@ -171,7 +194,7 @@ func geoLookup(input_ip string) string {
 	return ""
 }
 
-// performs an a record lookup
+// performs lookups on individual records
 func doLookups(Technique, Domain, tld string, out chan<- Record, resolve, geolocate bool) {
 	defer wg.Done()
 	r := new(Record)
@@ -186,7 +209,15 @@ func doLookups(Technique, Domain, tld string, out chan<- Record, resolve, geoloc
 	out <- *r
 }
 
-// validates Domains using regex
+// runs bulk lookups on list of domains
+func runLookups(technique string, results []string, tld string, out chan<- Record, resolve, geolocate bool) {
+	for _, r := range results {
+		wg.Add(1)
+		go doLookups(technique, r, tld, out, resolve, geolocate)
+	}
+}
+
+// validates domains using regex
 func validateDomainName(Domain string) bool {
 
 	patternStr := `^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$`
@@ -195,7 +226,7 @@ func validateDomainName(Domain string) bool {
 	return RegExp.MatchString(Domain)
 }
 
-// sanitizes Domains inputted into dnsmorph
+// sanitizes domains inputted into dnsmorph
 func processInput(input string) (sanitizedDomain, tld string) {
 	if !validateDomainName(input) {
 		r.Printf("\nplease supply a valid Domain\n\n")
@@ -215,46 +246,39 @@ func processInput(input string) (sanitizedDomain, tld string) {
 	return sanitizedDomain, tld
 }
 
-func runLookups(technique string, results []string, tld string, out chan<- Record, resolve, geolocate bool){
-	for _, r := range results {
-		wg.Add(1)
-		go doLookups(technique, r, tld, out, resolve, geolocate)
-	}
-}
-
 // helper function to print permutation report and miscellaneous information
 func printReport(technique string, results []string, tld string) {
 	out := make(chan Record)
-	w.Init(os.Stdout, 0, 0, 4, ' ', 0)
-	switch {		
-		case *verbose == true && *resolve == true && *geolocate == true:
-			runLookups(technique, results, tld, out, *resolve, *geolocate)
-		case *verbose == true && *geolocate == true:
-			runLookups(technique, results, tld, out, false, *geolocate)
-		case *verbose == true && *resolve == true:
-			runLookups(technique, results, tld, out, *resolve, *geolocate)
-		case *resolve == true && *geolocate == true:
-			runLookups(technique, results, tld, out, *resolve, *geolocate)
-		case *geolocate == true:
-			runLookups(technique, results, tld, out, false, *geolocate)
-		case *resolve == true:
-			runLookups(technique, results, tld, out, *resolve, *geolocate)
-		case *verbose == true:
-			for _, result := range results {
-				printResults(w, technique, result, tld)
+	w.Init(os.Stdout, 18, 8, 0, '\t', 0)
+	switch {
+	case *verbose == true && *resolve == true && *geolocate == true:
+		runLookups(technique, results, tld, out, *resolve, *geolocate)
+	case *verbose == true && *geolocate == true:
+		runLookups(technique, results, tld, out, false, *geolocate)
+	case *verbose == true && *resolve == true:
+		runLookups(technique, results, tld, out, *resolve, *geolocate)
+	case *resolve == true && *geolocate == true:
+		runLookups(technique, results, tld, out, *resolve, *geolocate)
+	case *geolocate == true:
+		runLookups(technique, results, tld, out, false, *geolocate)
+	case *resolve == true:
+		runLookups(technique, results, tld, out, *resolve, *geolocate)
+	case *verbose == true:
+		for _, result := range results {
+			printResults(w, technique, result, tld)
 		}
-		case *verbose == false && *resolve == false:
-			for _, result := range results {
-				fmt.Println(result + "." + tld)
-			}
+	case *verbose == false && *resolve == false:
+		for _, result := range results {
+			fmt.Println(result + "." + tld)
 		}
+	}
 	go monitorWorker(wg, out)
 	for r := range out {
 		r.printRecordData(w, *verbose)
 	}
 }
 
-// prints results data when Records are not returned
+// prints results data when records are not returned
 func printResults(writer *tabwriter.Writer, technique, result, tld string) {
 	if runtime.GOOS == "windows" {
 		fmt.Fprintln(w, technique+"\t"+result+"."+tld+"\t")
@@ -585,65 +609,65 @@ func homographAttack(domain string) []string {
 	return results
 }
 
-// Unzip will decompress a zip archive, moving all files and folders 
+// Unzip will decompress a zip archive, moving all files and folders
 // within the zip file (parameter 1) to an output directory (parameter 2).
 func Unzip(src string, dest string) ([]string, error) {
 
-    var filenames []string
+	var filenames []string
 
-    r, err := zip.OpenReader(src)
-    if err != nil {
-        return filenames, err
-    }
-    defer r.Close()
+	r, err := zip.OpenReader(src)
+	if err != nil {
+		return filenames, err
+	}
+	defer r.Close()
 
-    for _, f := range r.File {
+	for _, f := range r.File {
 
-        rc, err := f.Open()
-        if err != nil {
-            return filenames, err
-        }
-        defer rc.Close()
+		rc, err := f.Open()
+		if err != nil {
+			return filenames, err
+		}
+		defer rc.Close()
 
-        // Store filename/path for returning and using later on
-        fpath := filepath.Join(dest, f.Name)
+		// Store filename/path for returning and using later on
+		fpath := filepath.Join(dest, f.Name)
 
-        // Check for ZipSlip. More Info: http://bit.ly/2MsjAWE
-        if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
-            return filenames, fmt.Errorf("%s: illegal file path", fpath)
-        }
+		// Check for ZipSlip. More Info: http://bit.ly/2MsjAWE
+		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
+			return filenames, fmt.Errorf("%s: illegal file path", fpath)
+		}
 
-        filenames = append(filenames, fpath)
+		filenames = append(filenames, fpath)
 
-        if f.FileInfo().IsDir() {
+		if f.FileInfo().IsDir() {
 
-            // Make Folder
-            os.MkdirAll(fpath, os.ModePerm)
+			// Make Folder
+			os.MkdirAll(fpath, os.ModePerm)
 
-        } else {
+		} else {
 
-            // Make File
-            if err = os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
-                return filenames, err
-            }
+			// Make File
+			if err = os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
+				return filenames, err
+			}
 
-            outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-            if err != nil {
-                return filenames, err
-            }
+			outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+			if err != nil {
+				return filenames, err
+			}
 
-            _, err = io.Copy(outFile, rc)
+			_, err = io.Copy(outFile, rc)
 
-            // Close the file without defer to close before next iteration of loop
-            outFile.Close()
+			// Close the file without defer to close before next iteration of loop
+			outFile.Close()
 
-            if err != nil {
-                return filenames, err
-            }
+			if err != nil {
+				return filenames, err
+			}
 
-        }
-    }
-    return filenames, nil
+		}
+	}
+	return filenames, nil
 }
 
 // main program entry point
