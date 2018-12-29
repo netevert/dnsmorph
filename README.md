@@ -38,6 +38,8 @@ There are two ways to install dnsmorph on your system:
     - `go get -v ./...`
     - `go build`
 
+An Arch Linux package is also [available](https://aur.archlinux.org/packages/dnsmorph/).
+
 Usage
 ========
 <details><summary>Usage menu output</summary>
@@ -55,6 +57,7 @@ Usage
       -l string
             domain list filepath
       -r    resolve domain
+      -u    update check
       -v    enable verbosity
 </p>
 </details>
@@ -119,3 +122,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 Like it?
 =========
 If you like the tool please consider [contributing](https://github.com/netevert/dnsmorph/blob/master/CONTRIBUTING.md). DNSMORPH is developed and maintained during nuggets of spare time and any help to speed up the improvement of the tool would be hugely appreciated :)
+
+The tool received a few "honourable" mentions, including:
+
+- [KitPloit](https://www.kitploit.com/2018/05/dnsmorph-domain-name-permutation-engine.html)
+- [Seclist](http://seclist.us/dnsmorph-is-a-domain-name-permutation-engine.html)
+- [HackPlayers](https://www.hackplayers.com/2018/05/dnsmorph-permutacion-dominios.html)
+- [Segu-Info](https://blog.segu-info.com.ar/2018/05/dnsmorph-herramienta-de-permutacion-de.html)
