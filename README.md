@@ -8,8 +8,6 @@
 [![Coveralls github](https://img.shields.io/coveralls/github/netevert/dnsmorph.svg?style=flat-square)](https://coveralls.io/github/netevert/dnsmorph)
 [![Maintenance](https://img.shields.io/maintenance/yes/2018.svg?style=flat-square)]()
 [![GitHub last commit](https://img.shields.io/github/last-commit/errantbot/dnsmorph.svg?style=flat-square)](https://github.com/netevert/dnsmorph/commit/master)
-[![Donations](https://img.shields.io/badge/donate-bitcoin-orange.svg?logo=bitcoin&style=flat-square)](https://github.com/netevert/dnsmorph#donations)
-
 
 DNSMORPH is a domain name permutation engine, inspired by [dnstwist](https://github.com/elceef/dnstwist). It is written in [Go](https://golang.org/) making for a compact and **very** fast tool. It robustly handles any domain or subdomain supplied and provides a number of configuration options to tune permutation runs. 
 
@@ -118,13 +116,6 @@ Versioning
 
 This project adheres to [Semantic Versioning](https://semver.org/).
 
-Donations
+Like it?
 =========
-
-<details><summary>If you like DNSMORPH please consider donating</summary>
-<p>
-    
-    Bitcoin:  13i3hFGN1RaQqdeWqmPTMuYEj9FiJWuMWf
-    Litecoin: LZqLoRNHvJyuKz99mNAgVUj6M8iyEQuio9
-</p>
-</details>
+If you like the tool please consider [contributing](https://github.com/netevert/dnsmorph/blob/master/CONTRIBUTING.md). DNSMORPH is developed and maintained during nuggets of spare time and any help to speed up the improvement of the tool would be hugely appreciated :)
