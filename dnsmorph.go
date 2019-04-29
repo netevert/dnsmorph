@@ -11,6 +11,7 @@ import (
 	"github.com/oschwald/maxminddb-golang"
 	"github.com/tcnksm/go-latest"
 	"golang.org/x/net/publicsuffix"
+	"github.com/cavaliercoder/grab"
 	"io"
 	"log"
 	"net"
@@ -21,11 +22,12 @@ import (
 	"strings"
 	"sync"
 	"text/tabwriter"
+	"time"
 	"unicode"
 )
 
 // program version
-const version = "1.2.4"
+const version = "1.2.3"
 
 var (
 	githubTag = &latest.GithubTag{
@@ -50,7 +52,7 @@ var (
 	resolve           = flag.Bool("r", false, "resolve domain")
 	outcsv            = flag.Bool("csv", false, "output to csv")
 	outjson           = flag.Bool("json", false, "output to json")
-	utilDescription   = "dnsmorph -d domain | -l domains_file [-girv] [-csv | -json]"
+	utilDescription   = "dnsmorph -d domain | -l domains_file [-girvu] [-csv | -json]"
 	banner            = `
 ╔╦╗╔╗╔╔═╗╔╦╗╔═╗╦═╗╔═╗╦ ╦
  ║║║║║╚═╗║║║║ ║╠╦╝╠═╝╠═╣
@@ -111,10 +113,117 @@ func checkVersion() {
 	res, _ := latest.Check(githubTag, version)
 	if res.Outdated {
 		r.Printf("v.%s available\n", res.Current)
+		requestDownload()
 	} else {
 		g.Printf("you have the latest version\n")
 	}
 	os.Exit(1)
+}
+
+// asks the user permission to download new software version
+func requestDownload() {
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Print("upgrade? [y|n] ")
+	for scanner.Scan() {
+		switch res := scanner.Text(); res {
+			case "y":
+				downloadRelease()
+			case "yes":
+				downloadRelease()
+			case "n":
+				os.Exit(1)
+			case "no":
+				os.Exit(1)
+			default:
+				fmt.Println("invalid answer")
+				requestDownload()
+		}
+	}
+	if scanner.Err() != nil {
+		fmt.Println("error reading answer")
+	}
+}
+
+// downloads new software version
+func downloadRelease() {
+	version, _ := latest.Check(githubTag, version)
+	downloadTarget := buildDownloadTarget()
+	url := fmt.Sprintf("https://github.com/netevert/dnsmorph/releases/download/v%s/%s", version.Current, downloadTarget)
+	client := grab.NewClient()
+	req, _ := grab.NewRequest("data", url)
+
+	// start download
+	g.Printf("downloading...")
+	resp := client.Do(req)
+	y.Printf("\r%v          ", resp.HTTPResponse.Status)
+
+	// start UI loop
+	t := time.NewTicker(500 * time.Millisecond)
+	defer t.Stop()
+
+Loop:
+	for {
+		select {
+		case <-t.C:
+			r.Printf("\rtransferred %v / %v bytes (%.2f%%)",
+				resp.BytesComplete(),
+				resp.Size,
+				100*resp.Progress())
+
+		case <-resp.Done:
+			// download is complete
+			break Loop
+		}
+	}
+
+	// check for errors
+	if err := resp.Err(); err != nil {
+		fmt.Fprintf(os.Stderr, "\rdownload failed: %v\n", err)
+		os.Exit(1)
+	}
+	y.Printf("\r%v                                              ", "unzipping...")
+	_, err := Unzip("data/" + downloadTarget, "data")
+	if err != nil {
+		r.Printf("error unzipping")
+	}
+	os.Remove("delator.exe")
+	source, err := os.Open("data/dnsmorph.exe")
+	if err != nil {
+			fmt.Println("error")
+	}
+	defer source.Close()
+	destination, err := os.Create(fmt.Sprintf("dnsmorph_%s.exe", version.Current))
+	if err != nil {
+			fmt.Println("error")
+	}
+	defer destination.Close()
+	_, err = io.Copy(destination, source)
+	source.Close()
+	os.Remove("data/" + downloadTarget)
+	os.RemoveAll("data/dnsmorph.exe")
+	os.RemoveAll("data/data/")
+	g.Printf("\r%v             \n", "done")
+	os.Exit(1)
+}
+
+// determines host platform and architecture to build appropriate download target
+func buildDownloadTarget() string {
+	ext := "tar.gz"
+	version, _ := latest.Check(githubTag, version)
+	arch := runtime.GOARCH
+	if arch == "amd64" {
+		arch = "64-bit"
+		} else {
+			arch = "32-bit"
+		}
+	os := runtime.GOOS
+	if os == "darwin" {
+		os = "macOS"
+	}
+	if os == "windows" {
+		ext = "zip"
+	}
+	return fmt.Sprintf("dnsmorph_%s_%s_%s.%s", version.Current, os, arch, ext)
 }
 
 // sets up command-line arguments
