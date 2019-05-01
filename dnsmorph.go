@@ -1,6 +1,7 @@
 package main
 
 import (
+	"path/filepath"
 	"archive/zip"
 	"bufio"
 	"encoding/csv"
@@ -12,11 +13,12 @@ import (
 	"github.com/tcnksm/go-latest"
 	"golang.org/x/net/publicsuffix"
 	"github.com/cavaliercoder/grab"
+	"github.com/mholt/archiver"
 	"io"
 	"log"
 	"net"
 	"os"
-	"path/filepath"
+	"os/exec"
 	"regexp"
 	"runtime"
 	"strings"
@@ -112,7 +114,7 @@ func checkVersion() {
 	fmt.Printf(" v.%s\n", version)
 	res, _ := latest.Check(githubTag, version)
 	if res.Outdated {
-		r.Printf("v.%s available\n", res.Current)
+		r.Printf("v.%s released\n", res.Current)
 		requestDownload()
 	} else {
 		g.Printf("you have the latest version\n")
@@ -135,7 +137,7 @@ func requestDownload() {
 			case "no":
 				os.Exit(1)
 			default:
-				fmt.Println("invalid answer")
+				r.Printf("answer not valid\n")
 				requestDownload()
 		}
 	}
@@ -146,16 +148,19 @@ func requestDownload() {
 
 // downloads new software version
 func downloadRelease() {
+	buffer := "                                  "
+	binary := buildBinaryNameTarget()
 	version, _ := latest.Check(githubTag, version)
 	downloadTarget := buildDownloadTarget()
+	os.Mkdir("tmp", os.ModePerm)
 	url := fmt.Sprintf("https://github.com/netevert/dnsmorph/releases/download/v%s/%s", version.Current, downloadTarget)
 	client := grab.NewClient()
-	req, _ := grab.NewRequest("data", url)
+	req, _ := grab.NewRequest("tmp", url)
 
 	// start download
-	g.Printf("downloading...")
+	g.Printf("\rstarting upgrade procedure...       ")
 	resp := client.Do(req)
-	y.Printf("\r%v          ", resp.HTTPResponse.Status)
+	y.Printf("\r%v" + buffer, resp.HTTPResponse.Status)
 
 	// start UI loop
 	t := time.NewTicker(500 * time.Millisecond)
@@ -181,29 +186,54 @@ Loop:
 		fmt.Fprintf(os.Stderr, "\rdownload failed: %v\n", err)
 		os.Exit(1)
 	}
-	y.Printf("\r%v                                              ", "unzipping...")
-	_, err := Unzip("data/" + downloadTarget, "data")
-	if err != nil {
-		r.Printf("error unzipping")
+
+	// unzip and store binaries in tmp folder for swap
+	y.Printf("\r%v" + buffer, "unzipping...")
+	archiver.Unarchive("tmp/" + downloadTarget, "tmp")
+	src := "tmp/" + binary
+	dst := fmt.Sprintf("tmp/copy_%s", binary)
+	copyFile(src, dst)
+	cmd := exec.Command(src)
+	cmd.Start()
+	g.Printf("\r%v\n" + buffer, "upgrade finished")
+	os.Exit(1)
+}
+
+// upgrades the current program executable to the newest version
+func updateRelease(){
+	binary := buildBinaryNameTarget()
+	if _, err := os.Stat("tmp"); !os.IsNotExist(err) {
+		// clean up tmp directory
+		os.RemoveAll("tmp")
+	} 
+	if _, err := os.Stat(fmt.Sprintf("copy_%s", binary)); !os.IsNotExist(err) {
+		// swap executables and update release
+		os.RemoveAll(fmt.Sprintf("../%s", binary))
+		copyFile(fmt.Sprintf("copy_%s", binary), fmt.Sprintf("../copy_%s", binary))
+		err = os.Rename(fmt.Sprintf("../copy_%s", binary), fmt.Sprintf("../%s", binary))
+		if err != nil {
+			fmt.Println("error renaming file")
+		}
+		os.Exit(1)
 	}
-	os.Remove("delator.exe")
-	source, err := os.Open("data/dnsmorph.exe")
+}
+
+// copies file from src to dst 
+func copyFile(src, dst string){
+	source, err := os.Open(src)
 	if err != nil {
-			fmt.Println("error")
+		r.Printf("error copying %v to %v", src, dst)
 	}
 	defer source.Close()
-	destination, err := os.Create(fmt.Sprintf("dnsmorph_%s.exe", version.Current))
+
+	destination, err := os.Create(dst)
 	if err != nil {
-			fmt.Println("error")
+		r.Printf("error copying %v to %v", src, dst)
 	}
 	defer destination.Close()
 	_, err = io.Copy(destination, source)
 	source.Close()
-	os.Remove("data/" + downloadTarget)
-	os.RemoveAll("data/dnsmorph.exe")
-	os.RemoveAll("data/data/")
-	g.Printf("\r%v             \n", "done")
-	os.Exit(1)
+
 }
 
 // determines host platform and architecture to build appropriate download target
@@ -224,6 +254,15 @@ func buildDownloadTarget() string {
 		ext = "zip"
 	}
 	return fmt.Sprintf("dnsmorph_%s_%s_%s.%s", version.Current, os, arch, ext)
+}
+
+// determines host platform to build appropriate binary name
+func buildBinaryNameTarget() string {
+	binary := "dnsmorph"
+	if runtime.GOOS == "windows" {
+		binary = "dnsmorph.exe"
+	}
+	return binary
 }
 
 // sets up command-line arguments
@@ -781,6 +820,7 @@ func Unzip(src string, dest string) ([]string, error) {
 
 // main program entry point
 func main() {
+	updateRelease()
 	// check if geolocation database is zipped, if so unzip
 	if _, err := os.Stat("data/GeoLite2-City.zip"); !os.IsNotExist(err) {
 		_, err := Unzip("data/GeoLite2-City.zip", "data")
