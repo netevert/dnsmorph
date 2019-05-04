@@ -4,81 +4,120 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [1.2.4] - 2018-12-29
+## [1.2.5] - 2019-05-04
+
 ### Added
+
+- Ability to upgrade dnsmorph with -u option
+
+### Changed
+
+- Updated GeoLite database
+- Miscellaneous code fixes
+
+## [1.2.4] - 2018-12-29
+
+### Added
+
 - New version check
 - Additional homoglyphs
 
 ### Changed
+
 - Updated README
 - Updated GeoLite database
 - Output text formatting
 
 ### Fixed
+
 - Broken unicode character printing
 
 ## [1.2.3] - 2018-10-20
+
 ### Added
+
 - Geolite database unzip at runtime
 
 ### Changed
+
 - Updated GeoLite database
 - Output text formatting
 - Updated goreleaser.yml
 
 ## [1.2.2] - 2018-04-20
+
 ### Fixed
+
 - Synced versioning
 
 ## [1.2.1] - 2018-04-20
+
 ### Fixed
+
 - Incorrect release packaging in previous version
 
 ## [1.2.0] - 2018-04-20
+
 ### Added
+
 - Domain geolocation
 - Output to csv
 - Output to json
 - Option to submit a domains list file for bulk lookups
 
 ### Fixed
+
 - Output formatting
 
 ### Changed
+
 - Updated demo gif
 - Updated documentation
 
 ## [1.1.3] - 2018-04-02
+
 ### Fixed
+
 - Versioning
 - Minor fixes to output coloring
 
 ## [1.1.2] - 2018-03-31
+
 ### Fixed
+
 - Bug introduced in v.1.1 that made tld's disappear in terminal output
 
 ## [1.1.1] - 2018-03-31
+
 ### Added
+
 - Arm and arm64 architectures
 
 ### Fixed
+
 - Added zip binary distributions for windows releases
 - Readme
 
 ## [1.1.0] - 2018-03-30
+
 ### Added
+
 - Concurrent A record dns lookup
 
 ### Fixed
+
 - Domain input validation
 - Versioning
 
 ### Changed
+
 - Demo gif
 - Updated test suite
 
 ## [1.0.2] - 2018-03-20
+
 ### Added
+
 - Changelog
 - License
 - Readme

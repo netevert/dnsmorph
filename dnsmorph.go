@@ -29,7 +29,7 @@ import (
 )
 
 // program version
-const version = "1.2.3"
+const version = "1.2.5"
 
 var (
 	githubTag = &latest.GithubTag{
@@ -61,6 +61,7 @@ var (
 ═╩╝╝╚╝╚═╝╩ ╩╚═╝╩╚═╩  ╩ ╩`  // Calvin S on http://patorjk.com/
 )
 
+// GeoIPRecord struct
 type GeoIPRecord struct {
 	City struct {
 		Names map[string]string `maxminddb:"names"`
@@ -70,6 +71,7 @@ type GeoIPRecord struct {
 	} `maxminddb:"country"`
 }
 
+// Record struct
 type Record struct {
 	Technique   string `json:"technique"`
 	Domain      string `json:"domain"`
@@ -77,13 +79,15 @@ type Record struct {
 	Geolocation string `json:"geolocation"`
 }
 
+// Target struct
 type Target struct {
 	Technique    string
 	TargetDomain string
 	Function     func(string) []string
 }
 
-type OutJson struct {
+// OutJSON struct
+type OutJSON struct {
 	Results []Record `json:"results"`
 }
 
@@ -150,6 +154,7 @@ func requestDownload() {
 func downloadRelease() {
 	buffer := "                                  "
 	binary := buildBinaryNameTarget()
+	targetDirectory := buildBinaryDirectoryTarget()
 	version, _ := latest.Check(githubTag, version)
 	downloadTarget := buildDownloadTarget()
 	os.Mkdir("tmp", os.ModePerm)
@@ -170,7 +175,7 @@ Loop:
 	for {
 		select {
 		case <-t.C:
-			r.Printf("\rtransferred %v / %v bytes (%.2f%%)",
+			y.Printf("\rtransferred %v / %v bytes (%.2f%%)",
 				resp.BytesComplete(),
 				resp.Size,
 				100*resp.Progress())
@@ -183,18 +188,28 @@ Loop:
 
 	// check for errors
 	if err := resp.Err(); err != nil {
-		fmt.Fprintf(os.Stderr, "\rdownload failed: %v\n", err)
+		r.Fprintf(os.Stderr, "\rupgrade failed: %v\n", err)
 		os.Exit(1)
 	}
 
 	// unzip and store binaries in tmp folder for swap
 	y.Printf("\r%v" + buffer, "unzipping...")
-	archiver.Unarchive("tmp/" + downloadTarget, "tmp")
-	src := "tmp/" + binary
+	os.Mkdir("tmp/" + targetDirectory, os.ModePerm)
+	archiver.Unarchive("tmp/" + downloadTarget, "tmp/" + targetDirectory)
+	src := fmt.Sprintf("tmp/%s/%s", targetDirectory, binary)
 	dst := fmt.Sprintf("tmp/copy_%s", binary)
 	copyFile(src, dst)
-	cmd := exec.Command(src)
-	cmd.Start()
+	f, err := os.Create(fmt.Sprintf("tmp/%s/.upgrade", targetDirectory))
+	if err != nil {
+        panic(err)
+    }
+	f.Close()
+	os.Chdir(fmt.Sprintf("tmp/%s/", targetDirectory))
+	cmd := exec.Command(binary)
+	err = cmd.Start()
+	if err != nil {
+        r.Printf("\rupgrade failed: %v\n", err)
+    }
 	g.Printf("\r%v\n" + buffer, "upgrade finished")
 	os.Exit(1)
 }
@@ -206,14 +221,11 @@ func updateRelease(){
 		// clean up tmp directory
 		os.RemoveAll("tmp")
 	} 
-	if _, err := os.Stat(fmt.Sprintf("copy_%s", binary)); !os.IsNotExist(err) {
+	if _, err := os.Stat(".upgrade"); !os.IsNotExist(err) {
 		// swap executables and update release
-		os.RemoveAll(fmt.Sprintf("../%s", binary))
-		copyFile(fmt.Sprintf("copy_%s", binary), fmt.Sprintf("../copy_%s", binary))
-		err = os.Rename(fmt.Sprintf("../copy_%s", binary), fmt.Sprintf("../%s", binary))
-		if err != nil {
-			fmt.Println("error renaming file")
-		}
+		os.RemoveAll(fmt.Sprintf("../../%s", binary))
+		copyFile(fmt.Sprintf("../copy_%s", binary), fmt.Sprintf("../../copy_%s", binary))
+		err = os.Rename(fmt.Sprintf("../../copy_%s", binary), fmt.Sprintf("../../%s", binary))
 		os.Exit(1)
 	}
 }
@@ -263,6 +275,17 @@ func buildBinaryNameTarget() string {
 		binary = "dnsmorph.exe"
 	}
 	return binary
+}
+
+// determines host platform to build appropriate binary directory name
+func buildBinaryDirectoryTarget() string {
+	directory := buildDownloadTarget()
+	if runtime.GOOS == "windows" {
+		directory = strings.Replace(directory, ".zip", "", -1)
+	} else {
+		directory = strings.Replace(directory, ".tar.gz", "", -1)
+	}
+	return directory
 }
 
 // sets up command-line arguments
@@ -324,14 +347,14 @@ func aLookup(Domain string) string {
 }
 
 // performs a geolocation lookup on input IP, returns country + city
-func geoLookup(input_ip string) string {
-	if input_ip != "" {
+func geoLookup(inputIP string) string {
+	if inputIP != "" {
 		db, err := maxminddb.Open("data/GeoLite2-City.mmdb")
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer db.Close()
-		ip := net.ParseIP(input_ip)
+		ip := net.ParseIP(inputIP)
 		var record GeoIPRecord
 		err = db.Lookup(ip, &record)
 		if err != nil {
@@ -520,7 +543,7 @@ func outputToFile(targets []string) {
 		}
 	}
 	if *outjson != false {
-		var output OutJson
+		var output OutJSON
 		for r := range out {
 			output.Results = append(output.Results, r)
 		}
@@ -673,9 +696,7 @@ func omissionAttack(domain string) []string {
 
 // performs a hyphenation attack adding hyphens between characters
 func hyphenationAttack(domain string) []string {
-
 	results := []string{}
-
 	for i := 1; i < len(domain); i++ {
 		if (rune(domain[i]) != '-' || rune(domain[i]) != '.') && (rune(domain[i-1]) != '-' || rune(domain[i-1]) != '.') {
 			results = append(results, fmt.Sprintf("%s-%s", domain[:i], domain[i:]))
