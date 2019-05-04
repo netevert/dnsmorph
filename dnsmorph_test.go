@@ -1,7 +1,6 @@
 package main
 
 import (
-	// "net"
 	"testing"
 )
 
@@ -36,32 +35,6 @@ func TestDomainValidation(t *testing.T) {
 		t.Error("expected 'test' to be an invalid domain")
 	}
 }
-
-/*
-func TestDoLookups(t *testing.T) {
-	expected := record{"startpage.com", []string{}}
-	results := []record{}
-	out := make(chan record)
-	ip, err := net.ResolveIPAddr("ip4", expected.domain)
-	if err != nil {
-		expected.a = []string{""}
-	} else {
-		expected.a = append(expected.a, ip.String())
-	}
-	wg.Add(1)
-	go doLookups("startpage", "com", out)
-	go monitorWorker(wg, out)
-	for result := range out {
-		results = append(results, result)
-	}
-	if results[0].a[0] != expected.a[0] {
-		t.Error("expected A records to be identical")
-	}
-}
-*/
-/*
-Permutation attack functions tests
-*/
 
 type testcase struct {
 	testString        string

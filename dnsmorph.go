@@ -1,6 +1,7 @@
 package main
 
 import (
+	"path/filepath"
 	"archive/zip"
 	"bufio"
 	"encoding/csv"
@@ -11,21 +12,24 @@ import (
 	"github.com/oschwald/maxminddb-golang"
 	"github.com/tcnksm/go-latest"
 	"golang.org/x/net/publicsuffix"
+	"github.com/cavaliercoder/grab"
+	"github.com/mholt/archiver"
 	"io"
 	"log"
 	"net"
 	"os"
-	"path/filepath"
+	"os/exec"
 	"regexp"
 	"runtime"
 	"strings"
 	"sync"
 	"text/tabwriter"
+	"time"
 	"unicode"
 )
 
 // program version
-const version = "1.2.4"
+const version = "1.2.5"
 
 var (
 	githubTag = &latest.GithubTag{
@@ -50,13 +54,14 @@ var (
 	resolve           = flag.Bool("r", false, "resolve domain")
 	outcsv            = flag.Bool("csv", false, "output to csv")
 	outjson           = flag.Bool("json", false, "output to json")
-	utilDescription   = "dnsmorph -d domain | -l domains_file [-girv] [-csv | -json]"
+	utilDescription   = "dnsmorph -d domain | -l domains_file [-girvu] [-csv | -json]"
 	banner            = `
 ╔╦╗╔╗╔╔═╗╔╦╗╔═╗╦═╗╔═╗╦ ╦
  ║║║║║╚═╗║║║║ ║╠╦╝╠═╝╠═╣
 ═╩╝╝╚╝╚═╝╩ ╩╚═╝╩╚═╩  ╩ ╩`  // Calvin S on http://patorjk.com/
 )
 
+// GeoIPRecord struct
 type GeoIPRecord struct {
 	City struct {
 		Names map[string]string `maxminddb:"names"`
@@ -66,6 +71,7 @@ type GeoIPRecord struct {
 	} `maxminddb:"country"`
 }
 
+// Record struct
 type Record struct {
 	Technique   string `json:"technique"`
 	Domain      string `json:"domain"`
@@ -73,13 +79,15 @@ type Record struct {
 	Geolocation string `json:"geolocation"`
 }
 
+// Target struct
 type Target struct {
 	Technique    string
 	TargetDomain string
 	Function     func(string) []string
 }
 
-type OutJson struct {
+// OutJSON struct
+type OutJSON struct {
 	Results []Record `json:"results"`
 }
 
@@ -110,11 +118,174 @@ func checkVersion() {
 	fmt.Printf(" v.%s\n", version)
 	res, _ := latest.Check(githubTag, version)
 	if res.Outdated {
-		r.Printf("v.%s available\n", res.Current)
+		r.Printf("v.%s released\n", res.Current)
+		requestDownload()
 	} else {
 		g.Printf("you have the latest version\n")
 	}
 	os.Exit(1)
+}
+
+// asks the user permission to download new software version
+func requestDownload() {
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Print("upgrade? [y|n] ")
+	for scanner.Scan() {
+		switch res := scanner.Text(); res {
+			case "y":
+				downloadRelease()
+			case "yes":
+				downloadRelease()
+			case "n":
+				os.Exit(1)
+			case "no":
+				os.Exit(1)
+			default:
+				r.Printf("answer not valid\n")
+				requestDownload()
+		}
+	}
+	if scanner.Err() != nil {
+		fmt.Println("error reading answer")
+	}
+}
+
+// downloads new software version
+func downloadRelease() {
+	buffer := "                                  "
+	binary := buildBinaryNameTarget()
+	targetDirectory := buildBinaryDirectoryTarget()
+	version, _ := latest.Check(githubTag, version)
+	downloadTarget := buildDownloadTarget()
+	os.Mkdir("tmp", os.ModePerm)
+	url := fmt.Sprintf("https://github.com/netevert/dnsmorph/releases/download/v%s/%s", version.Current, downloadTarget)
+	client := grab.NewClient()
+	req, _ := grab.NewRequest("tmp", url)
+
+	// start download
+	g.Printf("\rstarting upgrade procedure...       ")
+	resp := client.Do(req)
+	y.Printf("\r%v" + buffer, resp.HTTPResponse.Status)
+
+	// start UI loop
+	t := time.NewTicker(500 * time.Millisecond)
+	defer t.Stop()
+
+Loop:
+	for {
+		select {
+		case <-t.C:
+			y.Printf("\rtransferred %v / %v bytes (%.2f%%)",
+				resp.BytesComplete(),
+				resp.Size,
+				100*resp.Progress())
+
+		case <-resp.Done:
+			// download is complete
+			break Loop
+		}
+	}
+
+	// check for errors
+	if err := resp.Err(); err != nil {
+		r.Fprintf(os.Stderr, "\rupgrade failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	// unzip and store binaries in tmp folder for swap
+	y.Printf("\r%v" + buffer, "unzipping...")
+	os.Mkdir("tmp/" + targetDirectory, os.ModePerm)
+	archiver.Unarchive("tmp/" + downloadTarget, "tmp/" + targetDirectory)
+	src := fmt.Sprintf("tmp/%s/%s", targetDirectory, binary)
+	dst := fmt.Sprintf("tmp/copy_%s", binary)
+	copyFile(src, dst)
+	f, err := os.Create(fmt.Sprintf("tmp/%s/.upgrade", targetDirectory))
+	if err != nil {
+        panic(err)
+    }
+	f.Close()
+	os.Chdir(fmt.Sprintf("tmp/%s/", targetDirectory))
+	cmd := exec.Command(binary)
+	err = cmd.Start()
+	if err != nil {
+        r.Printf("\rupgrade failed: %v\n", err)
+    }
+	g.Printf("\r%v\n" + buffer, "upgrade finished")
+	os.Exit(1)
+}
+
+// upgrades the current program executable to the newest version
+func updateRelease(){
+	binary := buildBinaryNameTarget()
+	if _, err := os.Stat("tmp"); !os.IsNotExist(err) {
+		// clean up tmp directory
+		os.RemoveAll("tmp")
+	} 
+	if _, err := os.Stat(".upgrade"); !os.IsNotExist(err) {
+		// swap executables and update release
+		os.RemoveAll(fmt.Sprintf("../../%s", binary))
+		copyFile(fmt.Sprintf("../copy_%s", binary), fmt.Sprintf("../../copy_%s", binary))
+		err = os.Rename(fmt.Sprintf("../../copy_%s", binary), fmt.Sprintf("../../%s", binary))
+		os.Exit(1)
+	}
+}
+
+// copies file from src to dst 
+func copyFile(src, dst string){
+	source, err := os.Open(src)
+	if err != nil {
+		r.Printf("error copying %v to %v", src, dst)
+	}
+	defer source.Close()
+
+	destination, err := os.Create(dst)
+	if err != nil {
+		r.Printf("error copying %v to %v", src, dst)
+	}
+	defer destination.Close()
+	_, err = io.Copy(destination, source)
+	source.Close()
+
+}
+
+// determines host platform and architecture to build appropriate download target
+func buildDownloadTarget() string {
+	ext := "tar.gz"
+	version, _ := latest.Check(githubTag, version)
+	arch := runtime.GOARCH
+	if arch == "amd64" {
+		arch = "64-bit"
+		} else {
+			arch = "32-bit"
+		}
+	os := runtime.GOOS
+	if os == "darwin" {
+		os = "macOS"
+	}
+	if os == "windows" {
+		ext = "zip"
+	}
+	return fmt.Sprintf("dnsmorph_%s_%s_%s.%s", version.Current, os, arch, ext)
+}
+
+// determines host platform to build appropriate binary name
+func buildBinaryNameTarget() string {
+	binary := "dnsmorph"
+	if runtime.GOOS == "windows" {
+		binary = "dnsmorph.exe"
+	}
+	return binary
+}
+
+// determines host platform to build appropriate binary directory name
+func buildBinaryDirectoryTarget() string {
+	directory := buildDownloadTarget()
+	if runtime.GOOS == "windows" {
+		directory = strings.Replace(directory, ".zip", "", -1)
+	} else {
+		directory = strings.Replace(directory, ".tar.gz", "", -1)
+	}
+	return directory
 }
 
 // sets up command-line arguments
@@ -176,14 +347,14 @@ func aLookup(Domain string) string {
 }
 
 // performs a geolocation lookup on input IP, returns country + city
-func geoLookup(input_ip string) string {
-	if input_ip != "" {
+func geoLookup(inputIP string) string {
+	if inputIP != "" {
 		db, err := maxminddb.Open("data/GeoLite2-City.mmdb")
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer db.Close()
-		ip := net.ParseIP(input_ip)
+		ip := net.ParseIP(inputIP)
 		var record GeoIPRecord
 		err = db.Lookup(ip, &record)
 		if err != nil {
@@ -372,7 +543,7 @@ func outputToFile(targets []string) {
 		}
 	}
 	if *outjson != false {
-		var output OutJson
+		var output OutJSON
 		for r := range out {
 			output.Results = append(output.Results, r)
 		}
@@ -525,9 +696,7 @@ func omissionAttack(domain string) []string {
 
 // performs a hyphenation attack adding hyphens between characters
 func hyphenationAttack(domain string) []string {
-
 	results := []string{}
-
 	for i := 1; i < len(domain); i++ {
 		if (rune(domain[i]) != '-' || rune(domain[i]) != '.') && (rune(domain[i-1]) != '-' || rune(domain[i-1]) != '.') {
 			results = append(results, fmt.Sprintf("%s-%s", domain[:i], domain[i:]))
@@ -672,6 +841,7 @@ func Unzip(src string, dest string) ([]string, error) {
 
 // main program entry point
 func main() {
+	updateRelease()
 	// check if geolocation database is zipped, if so unzip
 	if _, err := os.Stat("data/GeoLite2-City.zip"); !os.IsNotExist(err) {
 		_, err := Unzip("data/GeoLite2-City.zip", "data")
