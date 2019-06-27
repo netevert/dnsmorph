@@ -71,11 +71,11 @@ func TestAttackResults(t *testing.T) {
 func TestWhoisLookup(t *testing.T) {
 
 	result := whoisLookup("google.com")
-	if result[0] != "1995-08-14T04:00:00Z" {
-		t.Errorf("expected 1995-08-14T04:00:00Z, got %s", result[0])
+	if result[0] != "1997-09-15T04:00:00Z" {
+		t.Errorf("expected 1997-09-15T04:00:00Z, got %s", result[0])
 	}
 
-	if result[1] != "2018-08-14T07:14:12Z" {
-		t.Errorf("expected 2018-08-14T07:14:12Z, got %s", result[1])
+	if result[1] != "2018-02-21T18:36:40Z" {
+		t.Errorf("expected 2018-02-21T18:36:40Z, got %s", result[1])
 	}
 }
