@@ -100,11 +100,11 @@ type OutJSON struct {
 // prints Record data
 func (r *Record) printRecordData(writer *tabwriter.Writer, verbose bool) {
 	if verbose != false {
-		fmt.Fprintln(writer, r.Technique+"\t"+r.Domain+"\t"+"A:"+r.A+"\t"+"GEO:"+r.Geolocation+
-		"\t"+"CREATED:"+r.WhoisCreation+"\t"+"MODIFIED:"+r.WhoisModification)
+		fmt.Fprintln(writer, r.Technique+"\t"+r.Domain+"\t"+r.A+
+		"\t"+r.WhoisCreation+"\t"+r.WhoisModification + "\t"+r.Geolocation)
 		writer.Flush()
 	} else {
-		fmt.Fprintln(writer, r.Domain+"\t"+r.A+"\t"+r.Geolocation+"\t"+r.WhoisCreation+"\t"+r.WhoisModification)
+		fmt.Fprintln(writer, r.Domain+"\t"+r.A+"\t"+r.WhoisCreation+"\t"+r.WhoisModification+"\t"+r.Geolocation)
 		writer.Flush()
 	}
 }
@@ -449,7 +449,7 @@ func processInput(input string) (sanitizedDomain, tld string) {
 // helper function to print permutation report and miscellaneous information
 func printReport(technique string, results []string, tld string) {
 	out := make(chan Record)
-	w.Init(os.Stdout, 28, 8, 0, '\t', 0)
+	w.Init(os.Stdout, 0, 22, 0, '\t', 0)
 	switch {
 	case *resolve == true && *geolocate == true && *whoisflag == true:
 		runLookups(technique, results, tld, out, *resolve, *geolocate, *whoisflag)

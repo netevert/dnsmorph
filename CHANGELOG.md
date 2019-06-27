@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 
 - Updated GeoLite database
+- Improved output text formatting
 
 ## [1.2.5] - 2019-05-04
 

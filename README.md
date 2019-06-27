@@ -67,36 +67,54 @@ Usage
 <p>
 
     ./dnsmorph -d amazon.com
+
+![demo](https://github.com/netevert/dnsmorph/blob/master/docs/simple_permutation.gif)
+
 </p>
 </details>
 <details><summary>Run attacks against a list of domains</summary>
 <p>
 
     ./dnsmorph -l domains.txt
+
+![demo](https://github.com/netevert/dnsmorph/blob/master/docs/list_permutation.gif)
+
 </p>
 </details>
 <details><summary>Include subdomain in attack</summary>
 <p>
 
     ./dnsmorph -d staging.amazon.com -i
+
+![demo](https://github.com/netevert/dnsmorph/blob/master/docs/subdomain_permutation.gif)
+
 </p>
 </details>
 <details><summary>Run dns resolutions against permutated domains</summary>
 <p>
 
     ./dnsmorph -d amazon.com -r
+
+![demo](https://github.com/netevert/dnsmorph/blob/master/docs/resolution.gif)
+
 </p>
 </details>
 <details><summary>Run geolocation against permutated domains</summary>
 <p>
 
     ./dnsmorph -d amazon.com -g
+
+![demo](https://github.com/netevert/dnsmorph/blob/master/docs/geolocation.gif)
+
 </p>
 </details>
 <details><summary>Run whois lookup against permutated domains</summary>
 <p>
 
     ./dnsmorph -d amazon.com -w
+
+![demo](https://github.com/netevert/dnsmorph/blob/master/docs/whois_lookup.gif)
+
 </p>
 </details>
 <details><summary>Output results to csv or json</summary>
@@ -104,12 +122,18 @@ Usage
 
     ./dnsmorph -d amazon.com -r -g -csv
     ./dnsmorph -d amazon.com -r -g -json
+
+![demo](https://github.com/netevert/dnsmorph/blob/master/docs/write_to_file.gif)
+
 </p>
 </details>
 <details><summary>Activate verbose output</summary>
 <p>
 
     ./dnsmorph -d staging.amazon.com -v
+
+![demo](https://github.com/netevert/dnsmorph/blob/master/docs/verbose_output.gif)
+
 </p>
 </details>
 <p></p>
