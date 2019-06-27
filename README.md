@@ -2,12 +2,13 @@
 ==================================================================
 [![baby-gopher](https://raw.githubusercontent.com/drnic/babygopher-site/gh-pages/images/babygopher-logo-small.png)](http://www.babygopher.org)
 [![GitHub release](https://img.shields.io/github/release/netevert/dnsmorph.svg?style=flat-square)](https://github.com/netevert/dnsmorph/releases)
-[![license](https://img.shields.io/github/license/netevert/dnsmorph.svg?style=flat-square)](https://github.com/netevert/dnsmorph/blob/master/LICENSE)
 [![Travis](https://img.shields.io/travis/netevert/dnsmorph.svg?style=flat-square)](https://travis-ci.org/netevert/dnsmorph)
 [![Go Report Card](https://goreportcard.com/badge/github.com/netevert/dnsmorph?style=flat-square)](https://goreportcard.com/report/github.com/netevert/dnsmorph)
 [![Coveralls github](https://img.shields.io/coveralls/github/netevert/dnsmorph.svg?style=flat-square)](https://coveralls.io/github/netevert/dnsmorph)
-[![Maintenance](https://img.shields.io/maintenance/yes/2018.svg?style=flat-square)]()
+[![Maintenance](https://img.shields.io/maintenance/yes/2019.svg?style=flat-square)]()
 [![GitHub last commit](https://img.shields.io/github/last-commit/errantbot/dnsmorph.svg?style=flat-square)](https://github.com/netevert/dnsmorph/commit/master)
+![GitHub All Releases](https://img.shields.io/github/downloads/netevert/dnsmorph/total.svg?style=flat-square)
+[![Twitter Follow](https://img.shields.io/twitter/follow/netevert.svg?style=social)](https://twitter.com/netevert)
 
 DNSMORPH is a domain name permutation engine, inspired by [dnstwist](https://github.com/elceef/dnstwist). It is written in [Go](https://golang.org/) making for a compact and **very** fast tool. It robustly handles any domain or subdomain supplied and provides a number of configuration options to tune permutation runs. 
 
@@ -45,7 +46,7 @@ Usage
 <details><summary>Usage menu output</summary>
 <p>
 
-    dnsmorph -d domain | -l domains_file [-girv] [-csv | -json]
+    dnsmorph -d domain | -l domains_file [-girvuw] [-csv | -json]
       -csv
             output to csv
       -d string
@@ -59,6 +60,7 @@ Usage
       -r    resolve domain
       -u    update check
       -v    enable verbosity
+      -w    whois lookup
 </p>
 </details>
 <details><summary>Run attacks against a target domain</summary>
@@ -91,6 +93,12 @@ Usage
     ./dnsmorph -d amazon.com -g
 </p>
 </details>
+<details><summary>Run whois lookup against permutated domains</summary>
+<p>
+
+    ./dnsmorph -d amazon.com -w
+</p>
+</details>
 <details><summary>Output results to csv or json</summary>
 <p>
 
@@ -106,8 +114,6 @@ Usage
 </details>
 <p></p>
 
-**DNSMORPH is under active development**, much needs to be done to match and surpass the quality of comparable tools. Consult the [issues page](https://github.com/netevert/dnsmorph/issues) to see what's in the pipeline and how the project is progressing.
-
 License
 =======
 
@@ -121,7 +127,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 Like it?
 =========
-If you like the tool please consider [contributing](https://github.com/netevert/dnsmorph/blob/master/CONTRIBUTING.md). DNSMORPH is developed and maintained during nuggets of spare time and any help to speed up the improvement of the tool would be hugely appreciated :)
+If you like the tool please consider [contributing](https://github.com/netevert/dnsmorph/blob/master/CONTRIBUTING.md).
 
 The tool received a few "honourable" mentions, including:
 

@@ -14,6 +14,8 @@ import (
 	"golang.org/x/net/publicsuffix"
 	"github.com/cavaliercoder/grab"
 	"github.com/mholt/archiver"
+	"github.com/likexian/whois-go"
+	"github.com/likexian/whois-parser-go"
 	"io"
 	"log"
 	"net"
@@ -29,7 +31,7 @@ import (
 )
 
 // program version
-const version = "1.2.5"
+const version = "1.2.6"
 
 var (
 	githubTag = &latest.GithubTag{
@@ -45,16 +47,18 @@ var (
 	red               = color.New(color.FgHiRed).SprintFunc()
 	w                 = new(tabwriter.Writer)
 	wg                = &sync.WaitGroup{}
-	check             = flag.Bool("u", false, "update check")
-	domain            = flag.String("d", "", "target domain")
-	geolocate         = flag.Bool("g", false, "geolocate domain")
-	list              = flag.String("l", "", "domain list filepath")
-	verbose           = flag.Bool("v", false, "enable verbosity")
-	includeSubDomains = flag.Bool("i", false, "include subdomain")
-	resolve           = flag.Bool("r", false, "resolve domain")
-	outcsv            = flag.Bool("csv", false, "output to csv")
-	outjson           = flag.Bool("json", false, "output to json")
-	utilDescription   = "dnsmorph -d domain | -l domains_file [-girvu] [-csv | -json]"
+	newSet = flag.NewFlagSet("newSet", flag.ContinueOnError)
+	whoisflag         = newSet.Bool("w", false, "whois lookup")
+	check             = newSet.Bool("u", false, "update check")
+	domain            = newSet.String("d", "", "target domain")
+	geolocate         = newSet.Bool("g", false, "geolocate domain")
+	list              = newSet.String("l", "", "domain list filepath")
+	verbose           = newSet.Bool("v", false, "enable verbosity")
+	includeSubDomains = newSet.Bool("i", false, "include subdomain")
+	resolve           = newSet.Bool("r", false, "resolve domain")
+	outcsv            = newSet.Bool("csv", false, "output to csv")
+	outjson           = newSet.Bool("json", false, "output to json")
+	utilDescription   = "dnsmorph -d domain | -l domains_file [-girvuw] [-csv | -json]"
 	banner            = `
 ╔╦╗╔╗╔╔═╗╔╦╗╔═╗╦═╗╔═╗╦ ╦
  ║║║║║╚═╗║║║║ ║╠╦╝╠═╝╠═╣
@@ -77,6 +81,8 @@ type Record struct {
 	Domain      string `json:"domain"`
 	A           string `json:"a_record"`
 	Geolocation string `json:"geolocation"`
+	WhoisCreation string `json:"whoiscreation"`
+	WhoisModification string `json:"whoismodification"`
 }
 
 // Target struct
@@ -93,22 +99,13 @@ type OutJSON struct {
 
 // prints Record data
 func (r *Record) printRecordData(writer *tabwriter.Writer, verbose bool) {
-	if runtime.GOOS == "windows" {
-		if verbose != false {
-			fmt.Fprintln(writer, r.Technique+"\t"+r.Domain+"\t"+"A:"+r.A+"\t"+"GEO:"+r.Geolocation+"\t")
-			writer.Flush()
-		} else {
-			fmt.Fprintln(writer, r.Domain+"\t"+r.A+"\t"+r.Geolocation+"\t")
-			writer.Flush()
-		}
+	if verbose != false {
+		fmt.Fprintln(writer, r.Technique+"\t"+r.Domain+"\t"+"A:"+r.A+"\t"+"GEO:"+r.Geolocation+
+		"\t"+"CREATED:"+r.WhoisCreation+"\t"+"MODIFIED:"+r.WhoisModification)
+		writer.Flush()
 	} else {
-		if verbose != false {
-			fmt.Fprintln(writer, blue(r.Technique)+"\t"+r.Domain+"\t"+white("A:")+yellow(r.A)+"\t"+white("GEO:")+yellow(r.Geolocation)+"\t")
-			writer.Flush()
-		} else {
-			fmt.Fprintln(writer, r.Domain+"\t"+yellow(r.A)+"\t"+yellow(r.Geolocation)+"\t")
-			writer.Flush()
-		}
+		fmt.Fprintln(writer, r.Domain+"\t"+r.A+"\t"+r.Geolocation+"\t"+r.WhoisCreation+"\t"+r.WhoisModification)
+		writer.Flush()
 	}
 }
 
@@ -291,15 +288,19 @@ func buildBinaryDirectoryTarget() string {
 // sets up command-line arguments
 func setup() {
 
-	flag.Usage = func() {
+	newSet.Usage = func() {
 		g.Printf(banner)
 		fmt.Printf(" v.%s\n", version)
 		y.Printf("written & maintained by NetEvert\n\n")
 		fmt.Println(utilDescription)
-		flag.PrintDefaults()
+		newSet.PrintDefaults()
+		os.Exit(1)
 	}
 
-	flag.Parse()
+	newSet.Parse(os.Args[1:])
+	
+	// workaround to suppress glog errors, as per https://github.com/kubernetes/kubernetes/issues/17162#issuecomment-225596212
+	flag.CommandLine.Parse([]string{})
 
 	if *check {
 		checkVersion()
@@ -308,21 +309,21 @@ func setup() {
 	if *domain == "" && *list == "" {
 		r.Printf("\nplease supply domains\n\n")
 		fmt.Println(utilDescription)
-		flag.PrintDefaults()
+		newSet.PrintDefaults()
 		os.Exit(1)
 	}
 
 	if *list != "" && *domain != "" {
 		r.Printf("\nplease supply either option -d or -l\n\n")
 		fmt.Println(utilDescription)
-		flag.PrintDefaults()
+		newSet.PrintDefaults()
 		os.Exit(1)
 	}
 
 	if *outjson != false && *outcsv != false {
 		r.Printf("\nplease supply either csv or json ouput\n\n")
 		fmt.Println(utilDescription)
-		flag.PrintDefaults()
+		newSet.PrintDefaults()
 		os.Exit(1)
 	}
 }
@@ -365,8 +366,26 @@ func geoLookup(inputIP string) string {
 	return ""
 }
 
+// performs a whois lookup on input IP, return creation and modification date
+func whoisLookup(inputDomain string) []string {
+	var data []string
+	if inputDomain != "" {
+		whoisRaw, _ := whois.Whois(inputDomain)
+		result, err := whoisparser.Parse(whoisRaw)
+		if err == nil {
+
+			// Add the domain created date
+			data = append(data, result.Registrar.CreatedDate)
+
+			// Print the domain modification date
+			data = append(data, result.Registrar.UpdatedDate)
+		}
+	}
+	return data
+}
+
 // performs lookups on individual records
-func doLookups(Technique, Domain, tld string, out chan<- Record, resolve, geolocate bool) {
+func doLookups(Technique, Domain, tld string, out chan<- Record, resolve, geolocate, whoisflag bool) {
 	defer wg.Done()
 	r := new(Record)
 	r.Technique = Technique
@@ -377,14 +396,24 @@ func doLookups(Technique, Domain, tld string, out chan<- Record, resolve, geoloc
 	if geolocate {
 		r.Geolocation = geoLookup(aLookup(r.Domain))
 	}
+	if whoisflag {
+		record := whoisLookup(r.Domain)
+		if len(record) > 0 {
+			r.WhoisCreation = record[0]
+			r.WhoisModification = record[1]
+		} else {
+			r.WhoisCreation = ""
+			r.WhoisModification = ""
+		}
+	}
 	out <- *r
 }
 
 // runs bulk lookups on list of domains
-func runLookups(technique string, results []string, tld string, out chan<- Record, resolve, geolocate bool) {
+func runLookups(technique string, results []string, tld string, out chan<- Record, resolve, geolocate, whoisflag bool) {
 	for _, r := range results {
 		wg.Add(1)
-		go doLookups(technique, r, tld, out, resolve, geolocate)
+		go doLookups(technique, r, tld, out, resolve, geolocate, whoisflag)
 	}
 }
 
@@ -402,7 +431,7 @@ func processInput(input string) (sanitizedDomain, tld string) {
 	if !validateDomainName(input) {
 		r.Printf("\nplease supply a valid Domain\n\n")
 		fmt.Println(utilDescription)
-		flag.PrintDefaults()
+		newSet.PrintDefaults()
 		os.Exit(1)
 	} else {
 		if *includeSubDomains == false {
@@ -420,20 +449,36 @@ func processInput(input string) (sanitizedDomain, tld string) {
 // helper function to print permutation report and miscellaneous information
 func printReport(technique string, results []string, tld string) {
 	out := make(chan Record)
-	w.Init(os.Stdout, 18, 8, 0, '\t', 0)
+	w.Init(os.Stdout, 28, 8, 0, '\t', 0)
 	switch {
+	case *resolve == true && *geolocate == true && *whoisflag == true:
+		runLookups(technique, results, tld, out, *resolve, *geolocate, *whoisflag)
+	case *verbose == true && *resolve == true && *geolocate == true && *whoisflag == true:
+		runLookups(technique, results, tld, out, *resolve, *geolocate, *whoisflag)
+	case *verbose == true && *resolve == true && *whoisflag == true:
+		runLookups(technique, results, tld, out, *resolve, false, *whoisflag)
+	case *verbose == true && *geolocate == true && *whoisflag == true:
+		runLookups(technique, results, tld, out, false, *geolocate, *whoisflag)
+	case *verbose == true && *whoisflag == true:
+		runLookups(technique, results, tld, out, false, false, *whoisflag)
+	case *resolve == true && *whoisflag == true:
+		runLookups(technique, results, tld, out, *resolve, false, *whoisflag)
+	case *geolocate == true && *whoisflag == true:
+		runLookups(technique, results, tld, out, false, *geolocate, *whoisflag)
 	case *verbose == true && *resolve == true && *geolocate == true:
-		runLookups(technique, results, tld, out, *resolve, *geolocate)
+		runLookups(technique, results, tld, out, *resolve, *geolocate, false)
 	case *verbose == true && *geolocate == true:
-		runLookups(technique, results, tld, out, false, *geolocate)
+		runLookups(technique, results, tld, out, false, *geolocate, false)
 	case *verbose == true && *resolve == true:
-		runLookups(technique, results, tld, out, *resolve, *geolocate)
+		runLookups(technique, results, tld, out, *resolve, *geolocate, false)
 	case *resolve == true && *geolocate == true:
-		runLookups(technique, results, tld, out, *resolve, *geolocate)
+		runLookups(technique, results, tld, out, *resolve, *geolocate, false)
 	case *geolocate == true:
-		runLookups(technique, results, tld, out, false, *geolocate)
+		runLookups(technique, results, tld, out, false, *geolocate, false)
 	case *resolve == true:
-		runLookups(technique, results, tld, out, *resolve, *geolocate)
+		runLookups(technique, results, tld, out, *resolve, *geolocate, false)
+	case *whoisflag == true:
+		runLookups(technique, results, tld, out, false, false, *whoisflag)
 	case *verbose == true:
 		for _, result := range results {
 			printResults(w, technique, result, tld)
@@ -475,6 +520,9 @@ func printOutputInfo(results [][]string) {
 	if *geolocate != false {
 		lookups = append(lookups, "geolocation")
 	}
+	if *whoisflag != false {
+		lookups = append(lookups, "whois lookup")
+	}
 	for _, lookup := range lookups {
 		y.Printf("[%s] ", lookup)
 	}
@@ -514,7 +562,7 @@ func outputToFile(targets []string) {
 		wg.Add(1)
 		s := strings.Split(r[0], ".")
 		domain, tld := s[0], s[1]
-		go doLookups(r[1], domain, tld, out, *resolve, *geolocate)
+		go doLookups(r[1], domain, tld, out, *resolve, *geolocate, *whoisflag)
 	}
 	go monitorWorker(wg, out)
 	if *outcsv != false {
@@ -529,7 +577,7 @@ func outputToFile(targets []string) {
 		writer := csv.NewWriter(file)
 		defer writer.Flush()
 		for r := range out {
-			var data = []string{r.Technique, r.Domain, r.A, r.Geolocation}
+			var data = []string{r.Technique, r.Domain, r.A, r.Geolocation, r.WhoisCreation, r.WhoisModification}
 			err := writer.Write(data)
 			if err != nil {
 				log.Fatal(err)
