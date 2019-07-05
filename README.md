@@ -159,3 +159,4 @@ The tool received a few "honourable" mentions, including:
 - [Seclist](http://seclist.us/dnsmorph-is-a-domain-name-permutation-engine.html)
 - [HackPlayers](https://www.hackplayers.com/2018/05/dnsmorph-permutacion-dominios.html)
 - [Segu-Info](https://blog.segu-info.com.ar/2018/05/dnsmorph-herramienta-de-permutacion-de.html)
+- [True Blue IT - Security Review](http://news.security-intelligence.info/?edition_id=c6f2e150-998f-11e9-a7d8-0cc47a0d15fd#/science)
