@@ -31,7 +31,7 @@ import (
 )
 
 // program version
-const version = "1.2.6"
+const version = "1.2.7"
 
 var (
 	githubTag = &latest.GithubTag{
@@ -375,10 +375,10 @@ func whoisLookup(inputDomain string) []string {
 		if err == nil {
 
 			// Add the domain created date
-			data = append(data, result.Registrar.CreatedDate)
+			data = append(data, result.Domain.CreatedDate)
 
 			// Print the domain modification date
-			data = append(data, result.Registrar.UpdatedDate)
+			data = append(data, result.Domain.UpdatedDate)
 		}
 	}
 	return data

@@ -5,7 +5,6 @@ builds:
   - binary: dnsmorph
     goos:
       - windows
-      - darwin
       - linux
     goarch:
       - amd64
@@ -18,7 +17,6 @@ archive:
   replacements:
     amd64: 64-bit
     386: 32-bit
-    darwin: macOS
   format_overrides:
     - goos: windows
       format: zip
