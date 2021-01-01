@@ -5,7 +5,7 @@
 [![Travis](https://img.shields.io/travis/netevert/dnsmorph.svg?style=flat-square)](https://travis-ci.org/netevert/dnsmorph)
 [![Go Report Card](https://goreportcard.com/badge/github.com/netevert/dnsmorph?style=flat-square)](https://goreportcard.com/report/github.com/netevert/dnsmorph)
 [![Coveralls github](https://img.shields.io/coveralls/github/netevert/dnsmorph.svg?style=flat-square)](https://coveralls.io/github/netevert/dnsmorph)
-[![Maintenance](https://img.shields.io/maintenance/yes/2020.svg?style=flat-square)]()
+[![Maintenance](https://img.shields.io/maintenance/yes/2021.svg?style=flat-square)]()
 [![GitHub last commit](https://img.shields.io/github/last-commit/errantbot/dnsmorph.svg?style=flat-square)](https://github.com/netevert/dnsmorph/commit/master)
 ![GitHub All Releases](https://img.shields.io/github/downloads/netevert/dnsmorph/total.svg?style=flat-square)
 [![Twitter Follow](https://img.shields.io/twitter/follow/netevert.svg?style=social)](https://twitter.com/netevert)
