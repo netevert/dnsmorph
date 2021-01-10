@@ -31,7 +31,7 @@ import (
 )
 
 // program version
-const version = "1.2.7"
+const version = "1.2.8"
 
 var (
 	githubTag = &latest.GithubTag{
