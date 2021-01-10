@@ -145,6 +145,8 @@ License
 Distributed under the terms of the [MIT](http://www.linfo.org/mitlicense.html) license, DNSMORPH is free and open
 source software written and maintained with ❤ by NetEvert.
 
+This tool includes GeoLite2 data created by MaxMind, available from [maxmind.com](https://www.maxmind.com).
+
 Versioning
 ==========
 
