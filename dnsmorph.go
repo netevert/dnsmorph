@@ -1,26 +1,26 @@
 package main
 
 import (
-	"path/filepath"
 	"archive/zip"
 	"bufio"
 	"encoding/csv"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/cavaliercoder/grab"
 	"github.com/fatih/color"
+	"github.com/likexian/whois-go"
+	"github.com/likexian/whois-parser-go"
+	"github.com/mholt/archiver/v3"
 	"github.com/oschwald/maxminddb-golang"
 	"github.com/tcnksm/go-latest"
 	"golang.org/x/net/publicsuffix"
-	"github.com/cavaliercoder/grab"
-	"github.com/mholt/archiver"
-	"github.com/likexian/whois-go"
-	"github.com/likexian/whois-parser-go"
 	"io"
 	"log"
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
@@ -47,7 +47,7 @@ var (
 	red               = color.New(color.FgHiRed).SprintFunc()
 	w                 = new(tabwriter.Writer)
 	wg                = &sync.WaitGroup{}
-	newSet = flag.NewFlagSet("newSet", flag.ContinueOnError)
+	newSet            = flag.NewFlagSet("newSet", flag.ContinueOnError)
 	whoisflag         = newSet.Bool("w", false, "whois lookup")
 	check             = newSet.Bool("u", false, "update check")
 	domain            = newSet.String("d", "", "target domain")
@@ -77,11 +77,11 @@ type GeoIPRecord struct {
 
 // Record struct
 type Record struct {
-	Technique   string `json:"technique"`
-	Domain      string `json:"domain"`
-	A           string `json:"a_record"`
-	Geolocation string `json:"geolocation"`
-	WhoisCreation string `json:"whoiscreation"`
+	Technique         string `json:"technique"`
+	Domain            string `json:"domain"`
+	A                 string `json:"a_record"`
+	Geolocation       string `json:"geolocation"`
+	WhoisCreation     string `json:"whoiscreation"`
 	WhoisModification string `json:"whoismodification"`
 }
 
@@ -101,7 +101,7 @@ type OutJSON struct {
 func (r *Record) printRecordData(writer *tabwriter.Writer, verbose bool) {
 	if verbose != false {
 		fmt.Fprintln(writer, r.Technique+"\t"+r.Domain+"\t"+r.A+
-		"\t"+r.WhoisCreation+"\t"+r.WhoisModification + "\t"+r.Geolocation)
+			"\t"+r.WhoisCreation+"\t"+r.WhoisModification+"\t"+r.Geolocation)
 		writer.Flush()
 	} else {
 		fmt.Fprintln(writer, r.Domain+"\t"+r.A+"\t"+r.WhoisCreation+"\t"+r.WhoisModification+"\t"+r.Geolocation)
@@ -129,17 +129,17 @@ func requestDownload() {
 	fmt.Print("upgrade? [y|n] ")
 	for scanner.Scan() {
 		switch res := scanner.Text(); res {
-			case "y":
-				downloadRelease()
-			case "yes":
-				downloadRelease()
-			case "n":
-				os.Exit(1)
-			case "no":
-				os.Exit(1)
-			default:
-				r.Printf("answer not valid\n")
-				requestDownload()
+		case "y":
+			downloadRelease()
+		case "yes":
+			downloadRelease()
+		case "n":
+			os.Exit(1)
+		case "no":
+			os.Exit(1)
+		default:
+			r.Printf("answer not valid\n")
+			requestDownload()
 		}
 	}
 	if scanner.Err() != nil {
@@ -162,7 +162,7 @@ func downloadRelease() {
 	// start download
 	g.Printf("\rstarting upgrade procedure...       ")
 	resp := client.Do(req)
-	y.Printf("\r%v" + buffer, resp.HTTPResponse.Status)
+	y.Printf("\r%v"+buffer, resp.HTTPResponse.Status)
 
 	// start UI loop
 	t := time.NewTicker(500 * time.Millisecond)
@@ -190,34 +190,34 @@ Loop:
 	}
 
 	// unzip and store binaries in tmp folder for swap
-	y.Printf("\r%v" + buffer, "unzipping...")
-	os.Mkdir("tmp/" + targetDirectory, os.ModePerm)
-	archiver.Unarchive("tmp/" + downloadTarget, "tmp/" + targetDirectory)
+	y.Printf("\r%v"+buffer, "unzipping...")
+	os.Mkdir("tmp/"+targetDirectory, os.ModePerm)
+	archiver.Unarchive("tmp/"+downloadTarget, "tmp/"+targetDirectory)
 	src := fmt.Sprintf("tmp/%s/%s", targetDirectory, binary)
 	dst := fmt.Sprintf("tmp/copy_%s", binary)
 	copyFile(src, dst)
 	f, err := os.Create(fmt.Sprintf("tmp/%s/.upgrade", targetDirectory))
 	if err != nil {
-        panic(err)
-    }
+		panic(err)
+	}
 	f.Close()
 	os.Chdir(fmt.Sprintf("tmp/%s/", targetDirectory))
 	cmd := exec.Command(binary)
 	err = cmd.Start()
 	if err != nil {
-        r.Printf("\rupgrade failed: %v\n", err)
-    }
-	g.Printf("\r%v\n" + buffer, "upgrade finished")
+		r.Printf("\rupgrade failed: %v\n", err)
+	}
+	g.Printf("\r%v\n"+buffer, "upgrade finished")
 	os.Exit(1)
 }
 
 // upgrades the current program executable to the newest version
-func updateRelease(){
+func updateRelease() {
 	binary := buildBinaryNameTarget()
 	if _, err := os.Stat("tmp"); !os.IsNotExist(err) {
 		// clean up tmp directory
 		os.RemoveAll("tmp")
-	} 
+	}
 	if _, err := os.Stat(".upgrade"); !os.IsNotExist(err) {
 		// swap executables and update release
 		os.RemoveAll(fmt.Sprintf("../../%s", binary))
@@ -227,8 +227,8 @@ func updateRelease(){
 	}
 }
 
-// copies file from src to dst 
-func copyFile(src, dst string){
+// copies file from src to dst
+func copyFile(src, dst string) {
 	source, err := os.Open(src)
 	if err != nil {
 		r.Printf("error copying %v to %v", src, dst)
@@ -252,9 +252,9 @@ func buildDownloadTarget() string {
 	arch := runtime.GOARCH
 	if arch == "amd64" {
 		arch = "64-bit"
-		} else {
-			arch = "32-bit"
-		}
+	} else {
+		arch = "32-bit"
+	}
 	os := runtime.GOOS
 	if os == "darwin" {
 		os = "macOS"
@@ -298,7 +298,7 @@ func setup() {
 	}
 
 	newSet.Parse(os.Args[1:])
-	
+
 	// workaround to suppress glog errors, as per https://github.com/kubernetes/kubernetes/issues/17162#issuecomment-225596212
 	flag.CommandLine.Parse([]string{})
 
@@ -796,8 +796,8 @@ func homographAttack(domain string) []string {
 		's': {'Ⴝ', '\u13DA', 'ʂ', 'ś', 'ѕ'},
 		't': {'τ', 'т', 'ţ'},
 		'u': {'μ', 'υ', 'Ս', 'ս', 'ц', 'ᴜ', 'ǔ', 'ŭ'},
-		'v': {'ѵ', 'ν', '\u1E7F', '\u1E7D'},      // 'v̇'
-		'w': {'ѡ', 'ա', 'ԝ'}, // 'vv'
+		'v': {'ѵ', 'ν', '\u1E7F', '\u1E7D'}, // 'v̇'
+		'w': {'ѡ', 'ա', 'ԝ'},                // 'vv'
 		'x': {'х', 'ҳ', '\u1E8B'},
 		'y': {'ʏ', 'γ', 'у', 'Ү', 'ý'},
 		'z': {'ʐ', 'ż', 'ź', 'ʐ', 'ᴢ'},

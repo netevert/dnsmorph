@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/go-version v1.2.1 // indirect
 	github.com/likexian/whois-go v1.7.2
 	github.com/likexian/whois-parser-go v1.15.1
-	github.com/mholt/archiver v2.1.0+incompatible
+	github.com/mholt/archiver/v3 v3.5.0
 	github.com/nwaples/rardecode v1.1.0 // indirect
 	github.com/oschwald/maxminddb-golang v1.7.0
 	github.com/pierrec/lz4 v2.5.2+incompatible // indirect
