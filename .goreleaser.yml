@@ -1,24 +1,37 @@
-# .goreleaser.yml
-project_name: dnsmorph
-# Build customization
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod download
+    # you may remove this if you don't need go generate
+    - go generate ./...
 builds:
-  - binary: dnsmorph
+  - env:
+      - CGO_ENABLED=0
     goos:
-      - windows
       - linux
+      - windows
     goarch:
       - amd64
       - 386
       - arm
       - arm64
-# Archive customization
-archive:
-  format: tar.gz
-  replacements:
-    amd64: 64-bit
-    386: 32-bit
-  format_overrides:
-    - goos: windows
-      format: zip
-  files:
-    - data/GeoLite2-City.zip
+archives:
+  - 
+    replacements:
+      386: 32-bit
+      amd64: 64-bit
+    files:
+      - data/*
+    format_overrides:
+      - goos: windows
+        format: zip
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
