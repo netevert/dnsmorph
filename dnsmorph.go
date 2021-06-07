@@ -568,7 +568,8 @@ func outputToFile(targets []string) {
 			{"omission", sanitizedDomain, omissionAttack},
 			{"hyphenation", sanitizedDomain, hyphenationAttack},
 			{"bitsquatting", sanitizedDomain, bitsquattingAttack},
-			{"homograph", sanitizedDomain, homographAttack}} {
+			{"homograph", sanitizedDomain, homographAttack},
+			{"doppelganger", sanitizedDomain, doppelgangerAttack}} {
 			for _, r := range t.Function(t.TargetDomain) {
 				results = append(results, []string{r + "." + tld, t.Technique})
 			}
@@ -636,6 +637,7 @@ func runPermutations(targets []string) {
 			printReport("replacement", replacementAttack(sanitizedDomain), tld)
 			printReport("bitsquatting", bitsquattingAttack(sanitizedDomain), tld)
 			printReport("transposition", transpositionAttack(sanitizedDomain), tld)
+			printReport("doppelganger", doppelgangerAttack(sanitizedDomain), tld)
 		}
 	}
 }
@@ -764,6 +766,18 @@ func hyphenationAttack(domain string) []string {
 	for i := 1; i < len(domain); i++ {
 		if (rune(domain[i]) != '-' || rune(domain[i]) != '.') && (rune(domain[i-1]) != '-' || rune(domain[i-1]) != '.') {
 			results = append(results, fmt.Sprintf("%s-%s", domain[:i], domain[i:]))
+		}
+	}
+	return results
+}
+
+// performs a doppelganger attack by removing hypens in subdomain
+func doppelgangerAttack(domain string) []string {
+	results := []string{}
+
+	for i := len(domain)-1; i > 0; i-- {
+		if (rune(domain[i]) == '.' || rune(domain[i]) == '-') {
+			results = append(results, fmt.Sprintf("%s%s", domain[:i], domain[i+1:]))
 		}
 	}
 	return results
