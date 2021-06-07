@@ -690,7 +690,7 @@ func subdomainAttack(domain string) []string {
 	runes := []rune(domain)
 
 	for i := 1; i < len(runes); i++ {
-		if (rune(runes[i]) != '-' || rune(runes[i]) != '.') && (rune(runes[i-1]) != '-' || rune(runes[i-1]) != '.') {
+		if (rune(runes[i]) != '-' && rune(runes[i]) != '.') && (rune(runes[i-1]) != '-' && rune(runes[i-1]) != '.') {
 			results = append(results, fmt.Sprintf("%s.%s", string(runes[:i]), string(runes[i:])))
 		}
 	}
@@ -764,7 +764,7 @@ func omissionAttack(domain string) []string {
 func hyphenationAttack(domain string) []string {
 	results := []string{}
 	for i := 1; i < len(domain); i++ {
-		if (rune(domain[i]) != '-' || rune(domain[i]) != '.') && (rune(domain[i-1]) != '-' || rune(domain[i-1]) != '.') {
+		if (rune(domain[i]) != '-' && rune(domain[i]) != '.') && (rune(domain[i-1]) != '-' && rune(domain[i-1]) != '.') {
 			results = append(results, fmt.Sprintf("%s-%s", domain[:i], domain[i:]))
 		}
 	}
