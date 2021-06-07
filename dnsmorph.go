@@ -14,6 +14,7 @@ import (
 	"github.com/mholt/archiver/v3"
 	"github.com/oschwald/maxminddb-golang"
 	"github.com/tcnksm/go-latest"
+	"golang.org/x/net/idna"
 	"golang.org/x/net/publicsuffix"
 	"io"
 	"log"
@@ -56,6 +57,7 @@ var (
 	verbose           = newSet.Bool("v", false, "enable verbosity")
 	includeSubDomains = newSet.Bool("i", false, "include subdomain")
 	resolve           = newSet.Bool("r", false, "resolve domain")
+	idn               = newSet.Bool("n", false, "idna format homograph domain")
 	outcsv            = newSet.Bool("csv", false, "output to csv")
 	outjson           = newSet.Bool("json", false, "output to json")
 	utilDescription   = "dnsmorph -d domain | -l domains_file [-girvuw] [-csv | -json]"
@@ -481,11 +483,25 @@ func printReport(technique string, results []string, tld string) {
 		runLookups(technique, results, tld, out, false, false, *whoisflag)
 	case *verbose == true:
 		for _, result := range results {
-			printResults(w, technique, result, tld)
+			if (*idn == true && technique == "homograph") {
+				idn_result, err := idna.Lookup.ToASCII(result)
+				if err == nil {
+					printResults(w, technique, idn_result, tld)
+				}
+			} else {
+				printResults(w, technique, result, tld)
+			}
 		}
 	case *verbose == false && *resolve == false:
 		for _, result := range results {
-			fmt.Println(result + "." + tld)
+			if (*idn == true && technique == "homograph") {
+				idn_result, err := idna.Lookup.ToASCII(result)
+				if err == nil {
+					fmt.Println(idn_result + "." + tld)
+				}
+			} else {
+				fmt.Println(result + "." + tld)
+			}
 		}
 	}
 	go monitorWorker(wg, out)
