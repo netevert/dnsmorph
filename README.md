@@ -26,6 +26,7 @@ DNSMORPH includes the following domain permutation attack types:
 - Transposition attack
 - Vowel swap attack
 - Addition attack
+- Doppelganger attack
 
 Installation
 ============
@@ -58,6 +59,7 @@ Usage
             output to json
       -l string
             domain list filepath
+      -n    idna format homograph domain
       -r    resolve domain
       -u    update check
       -v    enable verbosity

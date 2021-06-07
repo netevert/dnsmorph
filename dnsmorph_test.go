@@ -54,6 +54,7 @@ var tests = []testcase{
 	{"test", hyphenationAttack, 3, "t-est"},
 	{"test", bitsquattingAttack, 31, "test"},
 	{"test", homographAttack, 27, "τest"},
+	{"test.test", doppelgangerAttack, 1, "testtest"},
 }
 
 func TestAttackResults(t *testing.T) {
@@ -75,7 +76,7 @@ func TestWhoisLookup(t *testing.T) {
 		t.Errorf("expected 1997-09-15T04:00:00Z, got %s", result[0])
 	}
 
-	if result[1] != "2018-02-21T18:36:40Z" {
-		t.Errorf("expected 2018-02-21T18:36:40Z, got %s", result[1])
+	if result[1] != "2019-09-09T15:39:04Z" {
+		t.Errorf("expected 2019-09-09T15:39:04Z, got %s", result[1])
 	}
 }
