@@ -14,6 +14,7 @@ import (
 	"github.com/mholt/archiver/v3"
 	"github.com/oschwald/maxminddb-golang"
 	"github.com/tcnksm/go-latest"
+	"golang.org/x/net/idna"
 	"golang.org/x/net/publicsuffix"
 	"io"
 	"log"
@@ -56,6 +57,7 @@ var (
 	verbose           = newSet.Bool("v", false, "enable verbosity")
 	includeSubDomains = newSet.Bool("i", false, "include subdomain")
 	resolve           = newSet.Bool("r", false, "resolve domain")
+	idn               = newSet.Bool("n", false, "idna format homograph domain")
 	outcsv            = newSet.Bool("csv", false, "output to csv")
 	outjson           = newSet.Bool("json", false, "output to json")
 	utilDescription   = "dnsmorph -d domain | -l domains_file [-girvuw] [-csv | -json]"
@@ -481,11 +483,25 @@ func printReport(technique string, results []string, tld string) {
 		runLookups(technique, results, tld, out, false, false, *whoisflag)
 	case *verbose == true:
 		for _, result := range results {
-			printResults(w, technique, result, tld)
+			if (*idn == true && technique == "homograph") {
+				idn_result, err := idna.Lookup.ToASCII(result)
+				if err == nil {
+					printResults(w, technique, idn_result, tld)
+				}
+			} else {
+				printResults(w, technique, result, tld)
+			}
 		}
 	case *verbose == false && *resolve == false:
 		for _, result := range results {
-			fmt.Println(result + "." + tld)
+			if (*idn == true && technique == "homograph") {
+				idn_result, err := idna.Lookup.ToASCII(result)
+				if err == nil {
+					fmt.Println(idn_result + "." + tld)
+				}
+			} else {
+				fmt.Println(result + "." + tld)
+			}
 		}
 	}
 	go monitorWorker(wg, out)
@@ -552,7 +568,8 @@ func outputToFile(targets []string) {
 			{"omission", sanitizedDomain, omissionAttack},
 			{"hyphenation", sanitizedDomain, hyphenationAttack},
 			{"bitsquatting", sanitizedDomain, bitsquattingAttack},
-			{"homograph", sanitizedDomain, homographAttack}} {
+			{"homograph", sanitizedDomain, homographAttack},
+			{"doppelganger", sanitizedDomain, doppelgangerAttack}} {
 			for _, r := range t.Function(t.TargetDomain) {
 				results = append(results, []string{r + "." + tld, t.Technique})
 			}
@@ -620,6 +637,7 @@ func runPermutations(targets []string) {
 			printReport("replacement", replacementAttack(sanitizedDomain), tld)
 			printReport("bitsquatting", bitsquattingAttack(sanitizedDomain), tld)
 			printReport("transposition", transpositionAttack(sanitizedDomain), tld)
+			printReport("doppelganger", doppelgangerAttack(sanitizedDomain), tld)
 		}
 	}
 }
@@ -672,7 +690,7 @@ func subdomainAttack(domain string) []string {
 	runes := []rune(domain)
 
 	for i := 1; i < len(runes); i++ {
-		if (rune(runes[i]) != '-' || rune(runes[i]) != '.') && (rune(runes[i-1]) != '-' || rune(runes[i-1]) != '.') {
+		if (rune(runes[i]) != '-' && rune(runes[i]) != '.') && (rune(runes[i-1]) != '-' && rune(runes[i-1]) != '.') {
 			results = append(results, fmt.Sprintf("%s.%s", string(runes[:i]), string(runes[i:])))
 		}
 	}
@@ -746,8 +764,20 @@ func omissionAttack(domain string) []string {
 func hyphenationAttack(domain string) []string {
 	results := []string{}
 	for i := 1; i < len(domain); i++ {
-		if (rune(domain[i]) != '-' || rune(domain[i]) != '.') && (rune(domain[i-1]) != '-' || rune(domain[i-1]) != '.') {
+		if (rune(domain[i]) != '-' && rune(domain[i]) != '.') && (rune(domain[i-1]) != '-' && rune(domain[i-1]) != '.') {
 			results = append(results, fmt.Sprintf("%s-%s", domain[:i], domain[i:]))
+		}
+	}
+	return results
+}
+
+// performs a doppelganger attack by removing hypens in subdomain
+func doppelgangerAttack(domain string) []string {
+	results := []string{}
+
+	for i := len(domain)-1; i > 0; i-- {
+		if (rune(domain[i]) == '.' || rune(domain[i]) == '-') {
+			results = append(results, fmt.Sprintf("%s%s", domain[:i], domain[i+1:]))
 		}
 	}
 	return results
