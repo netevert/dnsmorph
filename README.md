@@ -2,8 +2,6 @@
 ==================================================================
 [![baby-gopher](https://raw.githubusercontent.com/drnic/babygopher-site/gh-pages/images/babygopher-logo-small.png)](http://www.babygopher.org)
 [![GitHub release](https://img.shields.io/github/release/netevert/dnsmorph.svg?style=flat-square)](https://github.com/netevert/dnsmorph/releases)
-[![Maintenance](https://img.shields.io/maintenance/yes/2023.svg?style=flat-square)]()
-[![GitHub last commit](https://img.shields.io/github/last-commit/errantbot/dnsmorph.svg?style=flat-square)](https://github.com/netevert/dnsmorph/commit/master)
 ![GitHub All Releases](https://img.shields.io/github/downloads/netevert/dnsmorph/total.svg?style=flat-square)
 
 <!--[![Travis](https://img.shields.io/travis/netevert/dnsmorph.svg?style=flat-square)](https://travis-ci.org/netevert/dnsmorph)
